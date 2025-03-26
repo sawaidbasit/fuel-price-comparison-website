@@ -39,42 +39,47 @@ export default function Signup() {
             }
         }
     });
-    
-    
+
+    console.log("Supabase Response:", data, error);
+
     if (error) {
         console.error("Signup error:", error);
+        setError(error.message);
         return;
     }
     
     const user = data.user;
     if (!user) {
         console.error("User signup failed!");
+        setError("Signup failed. Please try again.");
         return;
     }
     
     console.log("✅ User Created with ID:", user?.id || "❌ No user ID!");
     
-    // ✅ Now insert into profiles table
     const { error: profileError } = await supabase.from("profiles").insert([
-        {
-            user_id: user.id,  // ✅ Use the actual user ID
-            first_name: firstName,
-            last_name: lastName,
-            email: email
-        }
-    ]);
-    
-    if (profileError) {
-        console.error("❌ Profile insert error:", profileError.message, profileError.details);
-        return;
-    } else {
+      {
+          id: user.id,  
+          first_name: firstName,
+          last_name: lastName,
+          email: email
+      }
+  ]);
+  
+  if (profileError) {
+      console.error("Profile Insert Error:", profileError.message, profileError.details, profileError.hint);
+      setError(`Profile creation failed: ${profileError.message}`);
+      return;
+  }
+
+  else {
         console.log("✅ Profile successfully inserted!");
     }
-    
 
     setSuccess("Signup successful! Redirecting to login...");
     setTimeout(() => navigate("/login"), 2000);
 };
+
   
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -85,17 +90,6 @@ export default function Signup() {
         {success && <p className="text-green-500 text-center">{success}</p>}
 
         <form onSubmit={handleSignup} className="space-y-4">
-          {/* <div>
-            <label className="block text-gray-700">Full Name:</label>
-            <input
-              type="text"
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              required
-            />
-          </div> */}
-
           <div>
             <label className="block text-gray-700">First Name:</label>
             <input

@@ -1,16 +1,20 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabaseClient";
+import { boolean } from "zod";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+      await supabase.auth.signOut();
   
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -18,7 +22,8 @@ export default function Login() {
     });
   
     if (error) {
-      setError(error.message || "Login failed.");
+      console.error("❌ Login Error:", error);
+      setError(error.message || "Invalid credentials.");
       return;
     }
   
@@ -30,11 +35,11 @@ export default function Login() {
   
     console.log("✅ Logged-in User ID:", user.id);
   
-    // Check if the profile exists
+    // ✅ Ensure the profile exists
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("*")
-      .eq("user_id", user.id)
+      .eq("id", user.id)
       .single();
   
     if (profileError) {
@@ -50,8 +55,6 @@ export default function Login() {
     window.location.href = "/";
   };
   
-  
-
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-lg">
@@ -71,15 +74,26 @@ export default function Login() {
             />
           </div>
 
-          <div>
+          <div >
             <label className="block text-gray-700">Password:</label>
+          <div className="relative">
+            
             <input
-              type="password"
+              type={`${showPassword ? 'text' : 'password'}`}
               className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+
+            <button
+                            type="button"
+                            className="absolute inset-y-0 right-3 flex items-center text-gray-500"
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
+                            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+            </div>
           </div>
 
           <button
@@ -90,13 +104,13 @@ export default function Login() {
           </button>
         </form>
 
-        <p className="text-center text-gray-600 mt-4">
+        {/* <p className="text-center text-gray-600 mt-4">
           Don't have an account?
           <span
             className="text-blue-500 cursor-pointer hover:underline"
             onClick={() => navigate("/signup")}
           > Sign Up</span>
-        </p>
+        </p> */}
       </div>
     </div>
   );

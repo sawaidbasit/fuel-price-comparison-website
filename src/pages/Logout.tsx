@@ -8,7 +8,7 @@ export default function LogoutButton() {
     await supabase.auth.signOut();
     localStorage.removeItem("isAuthenticated");
     localStorage.removeItem("userId");
-    navigate("/login"); // Redirect to login page
+    navigate("/login");
   };
 
   return (
