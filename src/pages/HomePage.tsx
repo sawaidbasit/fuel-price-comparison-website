@@ -123,7 +123,7 @@ export default function HomePage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex gap-5 justify-between">
-<div className="flex gap-4 w-full max-w-4xl">
+          <div className="flex gap-4 w-full max-w-4xl max-sm:flex-col">
 
             <input
               type="text"
