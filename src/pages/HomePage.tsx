@@ -27,6 +27,7 @@ export default function HomePage() {
 
   const [sortBy, setSortBy] = useState<"petrol" | "diesel">("petrol");
   const [showAddForm, setShowAddForm] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [user, setUser] = useState<User | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -56,13 +57,14 @@ export default function HomePage() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setUser(null);
-    navigate("/login");
   };
 
   const fetchData = async () => {
+    setIsLoading(true);
     const { data } = await supabase.from("fuel_stations").select();
     if (data) {
       setData([...data].sort((a, b) => a.petrol_price - b.petrol_price));
+      setIsLoading(false)
     }
   };
 
@@ -92,9 +94,7 @@ export default function HomePage() {
     setShowAddForm(false); // Modal band kar dein
   };
   console.log(user, "<=== user");
-
-  console.log(fetchData, "<=== fetchData");
-  console.log(data, "<=== data");
+  console.log(isLoading, "<=== isLoading")
 
   return (
     <div>
@@ -107,21 +107,23 @@ export default function HomePage() {
                 Lagos Fuel Price Tracker
               </h1>
             </div>
-            {user ? (
+            {user && (
               <button
                 onClick={handleLogout}
                 className="bg-red-500 cursor-pointer text-white px-4 py-2 rounded"
               >
                 Logout
               </button>
-            ) : (
-              <button
-                onClick={() => navigate("/login")}
-                className="bg-blue-500 text-white px-4 py-2 rounded mr-2"
-              >
-                Login
-              </button>
-            )}
+            ) 
+            // : (
+            //   <button
+            //     onClick={() => navigate("/login")}
+            //     className="bg-blue-500 text-white px-4 py-2 rounded mr-2"
+            //   >
+            //     Login
+            //   </button>
+            // )
+            }
           </div>
         </div>
       </header>
@@ -234,7 +236,12 @@ export default function HomePage() {
             ))
           ) }
         </div>
-        {!filteredData.length && (
+        {isLoading && (
+          <div className="flex justify-center items-center h-64 w-full">
+          <span className="animate-spin border-8 border-blue-500 border-t-transparent rounded-full h-12 w-12"></span>
+        </div>
+        )}
+        {!filteredData.length &&  !isLoading && (
             <div className="flex flex-col justify-center items-center h-screen w-full">
             <Ban className="text-gray-400 w-12 h-12 mb-2" />
             <p className="text-center text-gray-500 text-lg">No stations found.</p>

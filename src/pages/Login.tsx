@@ -1,11 +1,8 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabaseClient";
-import { boolean } from "zod";
 import { Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
-  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -22,7 +19,6 @@ export default function Login() {
     });
   
     if (error) {
-      console.error("❌ Login Error:", error);
       setError(error.message || "Invalid credentials.");
       return;
     }
@@ -32,10 +28,7 @@ export default function Login() {
       setError("Login failed: No user data received.");
       return;
     }
-  
-    console.log("✅ Logged-in User ID:", user.id);
-  
-    // ✅ Ensure the profile exists
+
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("*")
@@ -43,15 +36,9 @@ export default function Login() {
       .single();
   
     if (profileError) {
-      console.error("❌ Profile Error:", profileError);
       setError("Profile not found.");
       return;
     }
-  
-    console.log("✅ Profile Found:", profile);
-  
-    localStorage.setItem("isAuthenticated", "true");
-    localStorage.setItem("userId", user.id);
     window.location.href = "/";
   };
   
