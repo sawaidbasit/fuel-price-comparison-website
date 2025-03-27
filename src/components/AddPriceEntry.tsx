@@ -29,14 +29,13 @@ const initialFormState: PriceEntry = {
 
 interface AddPriceEntryProps {
   closeModal: () => void;
-  onSuccess: (newEntry: any) => void; // ✅ New prop added
+  onSuccess: (newEntry: any) => void;
 }
 
 export function AddPriceEntry({ closeModal, onSuccess }: AddPriceEntryProps) {
   const [formData, setFormData] = useState<PriceEntry>(initialFormState);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPreview, setShowPreview] = useState(false);
-  const navigate = useNavigate();
 
   const validateForm = () => {
     try {
@@ -73,12 +72,12 @@ export function AddPriceEntry({ closeModal, onSuccess }: AddPriceEntryProps) {
             location: formData.location,
             petrol_price: formData.petrolPrice,
             diesel_price: formData.dieselPrice,
-            last_updated: new Date().toISOString(), // ✅ Current Date for tracking updates
-            effective_date: formData.effectiveDate, // ✅ User-selected date
+            last_updated: new Date().toISOString(),
+            effective_date: formData.effectiveDate,
           },
         ])
         .select()
-        .single(); // ✅ Insert & get the newly added data
+        .single();
     
       if (error) {
         console.error("Supabase Insert Error:", error.message);
@@ -88,10 +87,10 @@ export function AddPriceEntry({ closeModal, onSuccess }: AddPriceEntryProps) {
     
       if (data) {
         toast.success("Price entry added successfully!");
-        onSuccess(data); // ✅ UI update karein
+        onSuccess(data); 
         setFormData(initialFormState);
         setShowPreview(false);
-        closeModal(); // ✅ Modal close karein
+        closeModal();
       }
     } catch (error) {
       console.error("Error inserting data:", error);

@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import { Ban, Clock, Fuel, Presentation as GasStation, X } from "lucide-react";
 import { AddPriceEntry } from "../components/AddPriceEntry";
-import { useNavigate } from "react-router-dom";
-// import Authentication from "../components/Authentication";
 import { supabase } from "../../lib/supabaseClient";
 import { User } from "@supabase/supabase-js";
 
@@ -22,7 +20,6 @@ const mockAuthState = {
 };
 
 export default function HomePage() {
-  const navigate = useNavigate();
   const [data, setData] = useState<FuelStation[]>([]);
 
   const [sortBy, setSortBy] = useState<"petrol" | "diesel">("petrol");
@@ -33,7 +30,6 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    // ✅ Check if the user is already logged in
     const checkAuth = async () => {
       const {
         data: { user },
@@ -42,7 +38,6 @@ export default function HomePage() {
     };
     checkAuth();
 
-    // ✅ Listen for changes in authentication state
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (_, session) => {
         setUser(session?.user || null);
@@ -75,7 +70,7 @@ export default function HomePage() {
   );
 
   useEffect(() => {
-    fetchData(); // Initial data load
+    fetchData();
   }, []);
 
   const handleSort = (type: "petrol" | "diesel") => {
@@ -90,11 +85,9 @@ export default function HomePage() {
   };
 
   const handleNewEntry = (newEntry: FuelStation) => {
-    setData((prevData) => [...prevData, newEntry]); // UI me turant add karein
-    setShowAddForm(false); // Modal band kar dein
+    setData((prevData) => [...prevData, newEntry]);
+    setShowAddForm(false);
   };
-  console.log(user, "<=== user");
-  console.log(isLoading, "<=== isLoading")
 
   return (
     <div>
