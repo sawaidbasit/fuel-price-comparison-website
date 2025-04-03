@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, Ban, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface FuelStation {
@@ -15,28 +15,52 @@ interface FuelStation {
 export default function DieselTable({ data }: { data: FuelStation[] }) {
   const [sortedData, setSortedData] = useState(data);
   const [ascending, setAscending] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [lowestPriceStation, setLowestPriceStation] =
+    useState<FuelStation | null>(null);
 
   useEffect(() => {
-    setSortedData(data);
+    if (!data || data.length === 0) return;
+
+    setLoading(true);
+    setTimeout(() => {
+      setSortedData([...data]);
+      setLowestPriceStation(
+        data.reduce((minStation, station) => {
+          return station.price < minStation.price ? station : minStation;
+        }, data[0])
+      );
+      setLoading(false);
+    }, 500);
   }, [data]);
 
   const sortByPrice = () => {
-    setAscending(!ascending);
+    setLoading(true);
+    setTimeout(() => {
+      setSortedData((prevData) =>
+        [...prevData].sort((a, b) =>
+          ascending ? a.price - b.price : b.price - a.price
+        )
+      );
+      setAscending(!ascending);
+      setLoading(false);
+    }, 300);
   };
 
-  // Pehle filter, phir sort
-  const filteredData = data.sort((a, b) => (ascending ? a.price - b.price : b.price - a.price));
+  const filteredData = sortedData.sort((a, b) =>
+    ascending ? a.price - b.price : b.price - a.price
+  );
 
   return (
-    <div className="relative flex justify-center border-1">
-      <div className="w-full flex justify-center relative z-10">
+    <div className="relative flex justify-center border-1 w-full max-w-full md:max-w-[80%] mx-auto">
+      <div className="flex justify-center relative z-10 w-[330px] h-[330px] min-w-[330px] min-h-[330px]">
         <svg
           viewBox="0 0 128 128"
           xmlns="http://www.w3.org/2000/svg"
           xmlnsXlink="http://www.w3.org/1999/xlink"
           aria-hidden="true"
           role="img"
-          className="iconify iconify--noto"
+          className="iconify iconify--noto w-full h-full"
           preserveAspectRatio="xMidYMid meet"
           fill="#000000"
         >
@@ -83,15 +107,6 @@ export default function DieselTable({ data }: { data: FuelStation[] }) {
             </path>{" "}
             <path
               d="M24.13 47c-.05.52-.81.52-.86.01c-.74-7.27-1.16-14.55-1.48-21.82c-.47-4.02 2.63-7.49 6.78-7.21c11.79-.35 23.64-.35 35.43-.01c4.14-.28 7.27 3.19 6.79 7.21c-.32 7.28-.75 14.57-1.49 21.85c-.05.52-.81.52-.86 0c-.77-7.53-1.19-15.07-1.53-22.59a2.11 2.11 0 0 0-.09-.45c-.25-.9-1.12-1.65-2.02-1.56c-.48.02-36.58.01-37.04-.01c-.9-.09-1.77.66-2.02 1.57c-.04.15-.07.3-.09.45c-.34 7.51-.75 15.04-1.52 22.56z"
-              fill="#757575"
-            >
-              {" "}
-            </path>{" "}
-            <ellipse cx="46.31" cy="84.08" rx="16.79" ry="17.89" fill="#f5f5f5">
-              {" "}
-            </ellipse>{" "}
-            <path
-              d="M38.87 86.6c0-4.37 7.43-12.95 7.43-12.95s7.43 8.58 7.43 12.95s-3.33 7.92-7.43 7.92s-7.43-3.55-7.43-7.92z"
               fill="#757575"
             >
               {" "}
@@ -150,70 +165,75 @@ export default function DieselTable({ data }: { data: FuelStation[] }) {
         </svg>
       </div>
 
-      <div className="text-white absolute top-20 mr-24 max-w-[300px] px-4 z-20 text-center">
-        <h3 className="text-xl font-semibold">Diesel Price</h3>
-        <h1 className="text-xl -mt-1 font-bold">
-          $59 <span className="text-md">/lo</span>
+      <div className="text-white absolute top-16 md:top-12 mr-20 max-w-[300px] px-4 z-20 text-center">
+        <h3 className="max-md:text-xl text-md font-semibold">Kerosene</h3>
+
+        <h1 className="max-md:text-xl text-md -mt-1 font-bold flex items-center justify-center">
+          ₦
+          {loading ? (
+            <span className="mr-2 flex justify-center items-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-t-white border-gray-300"></div>
+            </span>
+          ) : (
+            lowestPriceStation?.price
+          )}
+          <span className="text-xs"> /lo</span>
         </h1>
-        <p className="text-md">PRICE PER LITER</p>
+
+        <p className="text-xs">PRICE PER LITER</p>
       </div>
-
-      {/* <div className="absolute bottom-0 top-48 mr-20 z-30 w-full max-w-[80%]">
-        <table className="w-full border-2 border-[#757575]">
-          <thead>
-            <tr className="bg-yellow-500 text-white">
-              <th className="text-left px-4 py-2 relative">STATION</th>
-              <th
-                className="hover:text-gray-200 text-center px-4 py-2 cursor-pointer flex items-center justify-center gap-2"
-                onClick={sortByPrice}
-              >
-                PRICE{" "}
-                {ascending ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredData?.map((station, index) => (
-              <tr className="bg-yellow-400 text-white border-b border-[#383838]">
-                <td className="px-4 py-2">{station?.station_name}</td>
-                <td className="text-center px-4 py-2">${station?.price}</td>
+      <div className="absolute bottom-0 top-48 md:top-40 md:mr-20 md:max-w-[80%]sm:mr-20 z-30 w-full">
+        <div className="border-2 bg-yellow-400 border-yellow-500 w-full max-w-full">
+          <table className="w-full table-fixed">
+            <thead className="bg-yellow-500 text-white w-full">
+              <tr>
+                <th className="text-left px-4 py-2 w-1/2">STATION</th>
+                <th
+                  className="hover:text-gray-300 text-center px-4 py-2 cursor-pointer flex items-center justify-center gap-2"
+                  onClick={sortByPrice}
+                >
+                  PRICE{" "}
+                  {ascending ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div> */}
-      <div className="absolute bottom-0 top-48 mr-20 z-30 w-full max-w-[80%]">
-  <div className="border-2 border-yellow-500 w-full max-w-full">
-    <table className="w-full table-fixed">
-      {/* Fixed Header */}
-      <thead className="bg-yellow-500 text-white w-full">
-        <tr>
-          <th className="text-left px-4 py-2 w-1/2">STATION</th>
-          <th
-            className="hover:text-gray-300 text-center px-4 py-2 cursor-pointer flex items-center justify-center gap-2 w-1/2"
-            onClick={sortByPrice}
-          >
-            PRICE {ascending ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
-          </th>
-        </tr>
-      </thead>
-    </table>
+            </thead>
+          </table>
 
-    {/* ✅ Scrollable Body - Table Wrapper */}
-    <div className="h-[160px] overflow-y-auto custom-scrollbar w-full">
-      <table className="w-full table-fixed">
-        <tbody>
-          {filteredData?.map((station, index) => (
-            <tr key={index} className="bg-yellow-400 text-white border-b border-[#383838]">
-              <td className="px-4 py-2 w-1/2">{station?.station_name}</td>
-              <td className="text-center px-4 py-2 w-1/2">${station?.price}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
+          {loading ? (
+            <div className="flex justify-center items-center h-20">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-white"></div>
+            </div>
+          ) : (
+            <div className="h-[160px] overflow-y-auto custom-scrollbar w-full">
+              <table className="w-full table-fixed">
+                <tbody>
+                  {filteredData?.map((station, index) => (
+                    <tr
+                      key={index}
+                      className="text-white border-b border-zinc-400"
+                    >
+                      <td className="px-4 py-2 w-1/2">
+                        {station?.station_name}
+                      </td>
+                      <td className="text-center px-4 py-2 w-1/2">
+                        ₦{station?.price}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {!filteredData.length && !loading && (
+            <div className="flex flex-col justify-center items-center h-screen w-full">
+              <Ban className="text-gray-400 w-12 h-12 mb-2" />
+              <p className="text-center text-gray-500 text-lg">
+                No stations found.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

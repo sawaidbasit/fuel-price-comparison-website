@@ -26,7 +26,6 @@ const mockAuthState = {
 export default function HomePage() {
   const [sortBy, setSortBy] = useState<"petrol" | "diesel">("petrol");
   const [showAddForm, setShowAddForm] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
   const [user, setUser] = useState<User | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -61,7 +60,6 @@ export default function HomePage() {
   };
 
   const fetchData = async () => {
-    setIsLoading(true);
 
     // Fetch data from all three tables
     const { data: petrolData, error: petrolError } = await supabase
@@ -79,7 +77,6 @@ export default function HomePage() {
         "Error fetching data:",
         petrolError || dieselError || keroseneError
       );
-      setIsLoading(false);
       return;
     }
 
@@ -88,14 +85,7 @@ export default function HomePage() {
     setDieselData(dieselData || []);
     setKeroseneData(keroseneData || []);
 
-    setIsLoading(false);
   };
-
-  const filteredData = [...petrolData, ...dieselData, ...keroseneData].filter(
-    (station) =>
-      station.station_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      station.station_location.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   const filteredPetrol = petrolData.filter(station =>
     station.station_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -116,19 +106,6 @@ export default function HomePage() {
     fetchData();
   }, []);
 
-  const handleSort = (type: "petrol" | "diesel") => {
-    setSortBy(type);
-
-    if (type === "petrol") {
-      setPetrolData((prevData) =>
-        [...prevData].sort((a, b) => a.price - b.price)
-      );
-    } else {
-      setDieselData((prevData) =>
-        [...prevData].sort((a, b) => a.price - b.price)
-      );
-    }
-  };
 
   const handleNewEntry = (newEntry: FuelStation) => {
     if (newEntry.fuel_type === "petrol") {
@@ -176,21 +153,14 @@ export default function HomePage() {
                   Logout
                 </button>
               )
-              // : (
-              //   <button
-              //     onClick={() => navigate("/login")}
-              //     className="bg-blue-500 text-white px-4 py-2 rounded mr-2"
-              //   >
-              //     Login
-              //   </button>
-              // )
+            
             }
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex gap-5 justify-between">
+        <div className="flex gap-5 justify- items-center">
           <div className="w-full max-w-4xl">
             <input
               type="text"
@@ -210,7 +180,7 @@ export default function HomePage() {
             </button>
           )}
         </div>
-        <div className="mt-10 gap-y-32 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-10 gap-y-44 md:gap-y-32 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {showAddForm && (
             <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
               <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-2xl">
@@ -235,19 +205,6 @@ export default function HomePage() {
           <DieselTable data={filteredDiesel}/>
           <KeroseneTable data={filteredKerosene}/>
         </div>
-        {isLoading && (
-          <div className="flex justify-center items-center h-64 w-full">
-            <span className="animate-spin border-8 border-blue-500 border-t-transparent rounded-full h-12 w-12"></span>
-          </div>
-        )}
-        {!filteredData.length && !isLoading && (
-          <div className="flex flex-col justify-center items-center h-screen w-full">
-            <Ban className="text-gray-400 w-12 h-12 mb-2" />
-            <p className="text-center text-gray-500 text-lg">
-              No stations found.
-            </p>
-          </div>
-        )}
       </main>
     </div>
   );
