@@ -60,6 +60,7 @@ export function AddPriceEntry({ closeModal, onSuccess }: AddPriceEntryProps) {
   const [formData, setFormData] = useState<PriceEntry>(initialFormState);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPreview, setShowPreview] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -73,8 +74,7 @@ export function AddPriceEntry({ closeModal, onSuccess }: AddPriceEntryProps) {
     e.preventDefault();
     
     try {
-      // Debug: Log form data before validation
-      console.log("Submitting form data:", formData);
+      setLoading(true);
   
       const validationResult = priceEntrySchema.safeParse(formData);
       if (!validationResult.success) {
@@ -85,6 +85,7 @@ export function AddPriceEntry({ closeModal, onSuccess }: AddPriceEntryProps) {
         });
         setErrors(newErrors);
         toast.error("Please fix the form errors");
+        setLoading(false);
         return;
       }
   
@@ -126,6 +127,7 @@ export function AddPriceEntry({ closeModal, onSuccess }: AddPriceEntryProps) {
   
       if (error) {
         toast.error(`Failed to add price entry: ${error.message}`);
+        setLoading(false);
         return;
       }
   
@@ -134,9 +136,11 @@ export function AddPriceEntry({ closeModal, onSuccess }: AddPriceEntryProps) {
       setFormData(initialFormState);
       setShowPreview(false);
       closeModal();
+      setLoading(false);
     } catch (error) {
       console.error("Submission Error:", error);
       toast.error("Something went wrong, please try again.");
+      setLoading(false);
     }
   };
   
@@ -261,10 +265,17 @@ export function AddPriceEntry({ closeModal, onSuccess }: AddPriceEntryProps) {
 
         <button
           type="submit"
-          className="w-full flex justify-center items-center gap-2 px-6 py-3 text-white text-lg font-medium rounded-lg
-                 bg-green-600 hover:bg-green-700 transition duration-300 shadow-lg"
+          className="w-full flex justify-center items-center gap-2 px-6 py-3 text-white text-lg font-medium rounded-lg 
+                bg-green-600 hover:bg-green-700 transition duration-300 shadow-lg"
+          disabled={loading}
         >
-          Add Price Entry
+          {loading ? (
+            <div className="flex justify-center items-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-white"></div>
+          </div>
+          ) : (
+            "Add Price Entry"
+          )}
         </button>
       </form>
     </div>

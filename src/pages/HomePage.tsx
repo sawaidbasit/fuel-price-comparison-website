@@ -33,6 +33,7 @@ export default function HomePage() {
   const [petrolData, setPetrolData] = useState<FuelStation[]>([]);
   const [dieselData, setDieselData] = useState<FuelStation[]>([]);
   const [keroseneData, setKeroseneData] = useState<FuelStation[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -59,48 +60,56 @@ export default function HomePage() {
     setUser(null);
   };
 
-  const fetchData = async () => {
+const fetchData = async () => {
+  setLoading(true);
 
-    // Fetch data from all three tables
-    const { data: petrolData, error: petrolError } = await supabase
-      .from("petrol_prices")
-      .select();
-    const { data: dieselData, error: dieselError } = await supabase
-      .from("diesel_prices")
-      .select();
-    const { data: keroseneData, error: keroseneError } = await supabase
-      .from("kerosene_prices")
-      .select();
+  const { data: petrolData, error: petrolError } = await supabase
+    .from("petrol_prices")
+    .select();
+  const { data: dieselData, error: dieselError } = await supabase
+    .from("diesel_prices")
+    .select();
+  const { data: keroseneData, error: keroseneError } = await supabase
+    .from("kerosene_prices")
+    .select();
 
-    if (petrolError || dieselError || keroseneError) {
-      console.error(
-        "Error fetching data:",
-        petrolError || dieselError || keroseneError
-      );
-      return;
-    }
+  if (petrolError || dieselError || keroseneError) {
+    console.error("Error fetching data:", petrolError || dieselError || keroseneError);
+    setLoading(false);
+    return;
+  }
 
-    // Save data to state
-    setPetrolData(petrolData || []);
-    setDieselData(dieselData || []);
-    setKeroseneData(keroseneData || []);
-
-  };
-
-  const filteredPetrol = petrolData.filter(station =>
-    station.station_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    station.station_location.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  setPetrolData(petrolData || []);
+  setDieselData(dieselData || []);
+  setKeroseneData(keroseneData || []);
   
-  const filteredDiesel = dieselData.filter(station =>
-    station.station_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    station.station_location.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-  
-  const filteredKerosene = keroseneData.filter(station =>
-    station.station_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    station.station_location.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  setLoading(false);
+};
+
+  const handleSearch = (query: string) => {
+  setSearchQuery(query);
+  setLoading(true);
+
+  setTimeout(() => {
+    setLoading(false);
+  }, 500);
+};
+
+const filteredPetrol = petrolData.filter(station =>
+  station.station_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  station.station_location.toLowerCase().includes(searchQuery.toLowerCase())
+);
+
+const filteredDiesel = dieselData.filter(station =>
+  station.station_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  station.station_location.toLowerCase().includes(searchQuery.toLowerCase())
+);
+
+const filteredKerosene = keroseneData.filter(station =>
+  station.station_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  station.station_location.toLowerCase().includes(searchQuery.toLowerCase())
+);
+
 
   useEffect(() => {
     fetchData();
@@ -160,13 +169,13 @@ export default function HomePage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex gap-5 justify- items-center">
+        <div className="flex gap-5 justify-between items-center">
           <div className="w-full max-w-4xl">
             <input
               type="text"
               placeholder="Search by station name or location..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearch(e.target.value)}
               className="w-full rounded-lg shadow-lg max-w-lg p-2 border"
             />
 
@@ -201,9 +210,9 @@ export default function HomePage() {
               </div>
             </div>
           )}
-            <PetrolTable data={filteredPetrol}/>
-          <DieselTable data={filteredDiesel}/>
-          <KeroseneTable data={filteredKerosene}/>
+            <PetrolTable data={filteredPetrol} loading={loading}/>
+          <DieselTable data={filteredDiesel} loading={loading}/>
+          <KeroseneTable data={filteredKerosene} loading={loading}/>
         </div>
       </main>
     </div>

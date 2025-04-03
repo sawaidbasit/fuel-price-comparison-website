@@ -12,39 +12,28 @@ interface FuelStation {
   effective_date?: string;
 }
 
-export default function DieselTable({ data }: { data: FuelStation[] }) {
+export default function DieselTable({ data, loading }: { data: FuelStation[], loading: boolean }) {
   const [sortedData, setSortedData] = useState(data);
   const [ascending, setAscending] = useState(true);
-  const [loading, setLoading] = useState(true);
   const [lowestPriceStation, setLowestPriceStation] =
     useState<FuelStation | null>(null);
 
   useEffect(() => {
     if (!data || data.length === 0) return;
 
-    setLoading(true);
-    setTimeout(() => {
       setSortedData([...data]);
       setLowestPriceStation(
         data.reduce((minStation, station) => {
           return station.price < minStation.price ? station : minStation;
         }, data[0])
       );
-      setLoading(false);
-    }, 500);
   }, [data]);
-
   const sortByPrice = () => {
-    setLoading(true);
-    setTimeout(() => {
       setSortedData((prevData) =>
-        [...prevData].sort((a, b) =>
-          ascending ? a.price - b.price : b.price - a.price
-        )
+        [...prevData].sort((a, b) => 
+          (ascending ? a.price - b.price : b.price - a.price))
       );
       setAscending(!ascending);
-      setLoading(false);
-    }, 300);
   };
 
   const filteredData = sortedData.sort((a, b) =>
