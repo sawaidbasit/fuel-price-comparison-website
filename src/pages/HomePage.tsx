@@ -60,32 +60,38 @@ export default function HomePage() {
     setUser(null);
   };
 
-const fetchData = async () => {
-  setLoading(true);
-
-  const { data: petrolData, error: petrolError } = await supabase
-    .from("petrol_prices")
-    .select();
-  const { data: dieselData, error: dieselError } = await supabase
-    .from("diesel_prices")
-    .select();
-  const { data: keroseneData, error: keroseneError } = await supabase
-    .from("kerosene_prices")
-    .select();
-
-  if (petrolError || dieselError || keroseneError) {
-    console.error("Error fetching data:", petrolError || dieselError || keroseneError);
-    setLoading(false);
-    return;
-  }
-
-  setPetrolData(petrolData || []);
-  setDieselData(dieselData || []);
-  setKeroseneData(keroseneData || []);
+  const fetchData = async () => {
+    setLoading(true);
   
-  setLoading(false);
-};
-
+    const tables = ["petrol_prices", "diesel_prices", "kerosene_prices"];
+    const fetchPromises = tables.map(table => 
+      supabase.from(table).select().then(response => ({ table, data: response.data, error: response.error }))
+    );
+  
+    try {
+      // Wait for all fetch promises to resolve
+      const responses = await Promise.all(fetchPromises);
+  
+      // Dynamically update state based on the response
+      responses.forEach(({ table, data, error }) => {
+        console.log(table, data)
+        if (error) {
+          console.error(`Error fetching ${table} data:`, error);
+        } else {
+          // Use dynamic table-based assignment for each fuel type
+          if (table === "petrol_prices") setPetrolData(data || []);
+          if (table === "diesel_prices") setDieselData(data || []);
+          if (table === "kerosene_prices") setKeroseneData(data || []);
+        }
+      });
+  
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setLoading(false);
+    }
+  };
+    
   const handleSearch = (query: string) => {
   setSearchQuery(query);
   setLoading(true);
@@ -117,24 +123,19 @@ const filteredKerosene = keroseneData.filter(station =>
 
 
   const handleNewEntry = (newEntry: FuelStation) => {
-    if (newEntry.fuel_type === "petrol") {
-        setPetrolData((prevData) => {
-            const newData = [...prevData, newEntry];
-            console.log("Updated Petrol Data:", newData);
-            return newData;
-        });
-    } else if (newEntry.fuel_type === "diesel") {
-        setDieselData((prevData) => {
-            const newData = [...prevData, newEntry];
-            console.log("Updated Diesel Data:", newData);
-            return newData;
-        });
-    } else if (newEntry.fuel_type === "kerosene") {
-        setKeroseneData((prevData) => {
-            const newData = [...prevData, newEntry];
-            console.log("Updated Kerosene Data:", newData);
-            return newData;
-        });
+    const fuelTypeMapping = {
+      petrol: setPetrolData,
+      diesel: setDieselData,
+      kerosene: setKeroseneData,
+    };
+  
+    const setData = fuelTypeMapping[newEntry.fuel_type];
+  
+    if (setData) {
+      setData((prevData) => {
+        const newData = [...prevData, newEntry];
+        return newData;
+      });
     }
 
     setShowAddForm(false);

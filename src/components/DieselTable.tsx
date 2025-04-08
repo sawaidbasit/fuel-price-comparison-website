@@ -170,7 +170,7 @@ export default function DieselTable({ data, loading }: { data: FuelStation[], lo
         </svg>
       </div>
 
-      <div className="text-white absolute top-16 md:top-16 mr-20 max-w-[300px] px-4 z-20 text-center">
+      <div className="text-white absolute top-16 md:top-16 mr-24 max-w-[300px] px-4 z-20 text-center">
         <h3 className="text-2xl font-semibold">Diesel</h3>
 
         <h1 className="text-xl text-md -mt-1 font-bold flex items-center justify-center">
@@ -191,7 +191,7 @@ export default function DieselTable({ data, loading }: { data: FuelStation[], lo
           <table className="w-full table-fixed">
             <thead className="bg-yellow-500 text-white w-full">
               <tr>
-                <th className="text-left px-4 py-2 w-1/2">STATION</th>
+                <th className="text-left px-4 py-2 w-[60%]">STATION</th>
                 <th
                   className="hover:text-gray-300 text-center px-4 py-2 cursor-pointer flex items-center justify-center gap-2"
                   onClick={sortByPrice}
@@ -220,8 +220,8 @@ export default function DieselTable({ data, loading }: { data: FuelStation[], lo
                         {station?.station_name}
                         <p className="text-xs text-white">({station?.station_location})</p>
                       </td>
-                      <td className="text-center px-4 py-2 w-[%30]">
-                      {station.price ? <p>₦{station.price}</p>: <p>not available</p>}
+                      <td className="text-center px-4 py-2 w-[30%]">
+                      {station.price ? <p>₦{station.price}</p>: <p>N/A</p>}
                       </td>
                     </tr>
                   ))}

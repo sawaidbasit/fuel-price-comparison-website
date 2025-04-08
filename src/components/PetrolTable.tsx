@@ -172,7 +172,7 @@ export default function PetrolTable({ data, loading }: { data: FuelStation[], lo
         </svg>
       </div>
 
-      <div className="text-white absolute top-16 md:top-16 mr-20 max-w-[300px] px-4 z-20 text-center">
+      <div className="text-white absolute top-16 md:top-16 mr-[90px] max-w-[300px] px-4 z-20 text-center">
         <h3 className="text-2xl font-semibold">Petrol</h3>
 
         <h1 className="text-xl text-md -mt-1 font-bold flex items-center justify-center">
@@ -224,7 +224,7 @@ export default function PetrolTable({ data, loading }: { data: FuelStation[], lo
                         <p className="text-xs text-zinc-100">({station?.station_location})</p>
                       </td>
                       <td className="text-center px-4 py-2 w-[30%]">
-                        {station.price ? <p>₦{station.price}</p>: <p>not available</p>}
+                        {station.price ? <p>₦{station.price}</p>: <p>N/A</p>}
                       </td>
                     </tr>
                   ))}
