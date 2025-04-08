@@ -18,27 +18,43 @@ export default function DieselTable({ data, loading }: { data: FuelStation[], lo
   const [lowestPriceStation, setLowestPriceStation] =
     useState<FuelStation | null>(null);
 
-  useEffect(() => {
-    if (!data || data.length === 0) return;
-
+    useEffect(() => {
+      if (!data || data.length === 0) return;
+    
+      const stationsWithPrice = data.filter(station => typeof station.price === 'number');
+    
       setSortedData([...data]);
-      setLowestPriceStation(
-        data.reduce((minStation, station) => {
-          return station.price < minStation.price ? station : minStation;
-        }, data[0])
-      );
-  }, [data]);
-  const sortByPrice = () => {
-      setSortedData((prevData) =>
-        [...prevData].sort((a, b) => 
-          (ascending ? a.price - b.price : b.price - a.price))
+    
+      if (stationsWithPrice.length > 0) {
+        setLowestPriceStation(
+          stationsWithPrice.reduce((minStation, station) =>
+            station.price < minStation.price ? station : minStation
+          )
+        );
+      } else {
+        setLowestPriceStation(null);
+      }
+    }, [data]);
+
+    const sortByPrice = () => {
+      setSortedData(prevData =>
+        [...prevData].sort((a, b) => {
+          if (a.price == null && b.price == null) return 0;
+          if (a.price == null) return 1;
+          if (b.price == null) return -1;
+          return ascending ? a.price - b.price : b.price - a.price;
+        })
       );
       setAscending(!ascending);
-  };
+    };
+    
 
-  const filteredData = sortedData.sort((a, b) =>
-    ascending ? a.price - b.price : b.price - a.price
-  );
+    const filteredData = [...sortedData].sort((a, b) => {
+      if (a.price == null && b.price == null) return 0;
+      if (a.price == null) return 1;
+      if (b.price == null) return -1;
+      return ascending ? a.price - b.price : b.price - a.price;
+    });
 
   return (
     <div className="relative flex justify-center border-1 w-full max-w-full md:max-w-[80%] mx-auto">
@@ -154,10 +170,10 @@ export default function DieselTable({ data, loading }: { data: FuelStation[], lo
         </svg>
       </div>
 
-      <div className="text-white absolute top-16 md:top-12 mr-20 max-w-[300px] px-4 z-20 text-center">
-        <h3 className="max-md:text-xl text-md font-semibold">Kerosene</h3>
+      <div className="text-white absolute top-16 md:top-16 mr-20 max-w-[300px] px-4 z-20 text-center">
+        <h3 className="text-2xl font-semibold">Diesel</h3>
 
-        <h1 className="max-md:text-xl text-md -mt-1 font-bold flex items-center justify-center">
+        <h1 className="text-xl text-md -mt-1 font-bold flex items-center justify-center">
           ₦
           {loading ? (
             <span className="mr-2 flex justify-center items-center">
@@ -166,10 +182,9 @@ export default function DieselTable({ data, loading }: { data: FuelStation[], lo
           ) : (
             lowestPriceStation?.price
           )}
-          <span className="text-xs"> /lo</span>
+          <span className="px-1">/L</span>
         </h1>
 
-        <p className="text-xs">PRICE PER LITER</p>
       </div>
       <div className="absolute bottom-0 top-48 md:top-40 md:mr-20 md:max-w-[80%]sm:mr-20 z-30 w-full">
         <div className="border-2 bg-yellow-400 border-yellow-500 w-full max-w-full">
@@ -193,7 +208,7 @@ export default function DieselTable({ data, loading }: { data: FuelStation[], lo
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-white"></div>
             </div>
           ) : (
-            <div className="h-[160px] overflow-y-auto custom-scrollbar w-full">
+            <div className="h-[200px] overflow-y-auto custom-scrollbar w-full">
               <table className="w-full table-fixed">
                 <tbody>
                   {filteredData?.map((station, index) => (
@@ -201,11 +216,12 @@ export default function DieselTable({ data, loading }: { data: FuelStation[], lo
                       key={index}
                       className="text-white border-b border-zinc-400"
                     >
-                      <td className="px-4 py-2 w-1/2">
+                      <td className="px-4 py-2 w-[68%]">
                         {station?.station_name}
+                        <p className="text-xs text-white">({station?.station_location})</p>
                       </td>
-                      <td className="text-center px-4 py-2 w-1/2">
-                        ₦{station?.price}
+                      <td className="text-center px-4 py-2 w-[%30]">
+                      {station.price ? <p>₦{station.price}</p>: <p>not available</p>}
                       </td>
                     </tr>
                   ))}

@@ -141,7 +141,12 @@ const filteredKerosene = keroseneData.filter(station =>
     fetchData()
 };
 
-  
+const visibleTablesCount = [
+  filteredPetrol.length,
+  filteredDiesel.length,
+  filteredKerosene.length,
+].filter(Boolean).length;
+
   return (
     <div>
       <header className="bg-white shadow-sm">
@@ -189,7 +194,15 @@ const filteredKerosene = keroseneData.filter(station =>
             </button>
           )}
         </div>
-        <div className="mt-10 gap-y-44 md:gap-y-32 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div
+          className={`
+            mt-10 gap-y-44 md:gap-y-32 justify-center grid gap-4
+            ${visibleTablesCount === 1 ? 'grid-cols-1 ' : ''}
+            ${visibleTablesCount === 2 ? 'grid-cols-2 max-md:grid-cols-1' : ''}
+            ${visibleTablesCount >= 3 ? 'lg:grid-cols-3 md:grid-cols-2 max-md:grid-cols-1' : ''}
+            place-items-center
+          `}
+        >
           {showAddForm && (
             <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
               <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-2xl">
@@ -210,9 +223,15 @@ const filteredKerosene = keroseneData.filter(station =>
               </div>
             </div>
           )}
-            <PetrolTable data={filteredPetrol} loading={loading}/>
+          <div className={`${!filteredPetrol.length && 'hidden'}`}>
+          <PetrolTable data={filteredPetrol} loading={loading}/>
+          </div>
+          <div className={`${!filteredDiesel.length && 'hidden'}`}>
           <DieselTable data={filteredDiesel} loading={loading}/>
+          </div>
+          <div className={`${!filteredKerosene.length && 'hidden'}`}>
           <KeroseneTable data={filteredKerosene} loading={loading}/>
+          </div>
         </div>
       </main>
     </div>
