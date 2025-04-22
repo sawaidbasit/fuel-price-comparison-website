@@ -225,16 +225,61 @@ const visibleTablesCount = [
             </div>
           )}
           <div className={`${!filteredPetrol.length && 'hidden'}`}>
-          <PetrolTable data={filteredPetrol} loading={loading}/>
+          <PetrolTable data={filteredPetrol.slice(0,5)} loading={loading}/>
           </div>
           <div className={`${!filteredDiesel.length && 'hidden'}`}>
-          <DieselTable data={filteredDiesel} loading={loading}/>
+          <DieselTable data={filteredDiesel.slice(0,5)} loading={loading}/>
           </div>
           <div className={`${!filteredKerosene.length && 'hidden'}`}>
-          <KeroseneTable data={filteredKerosene} loading={loading}/>
+          <KeroseneTable data={filteredKerosene.slice(0,5)} loading={loading}/>
           </div>
         </div>
       </main>
+          <div className="mt-20 bg-zinc-200 w-full h-[2px]"/>
+
+      <div className="mt-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {petrolData.slice(0, 5).map((item, index) => (
+        <div
+        key={index}
+        className="bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition-shadow border border-gray-200"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">
+            {item?.station_name}
+            </h2>
+            <p className="text-zinc-500">({item?.station_location})</p>
+            
+          </div>
+          <Fuel className="h-6 w-6 text-blue-500" />
+        </div>
+
+        <div className="mt-4 space-y-3">
+          <div className="flex justify-between items-center bg-gray-200 rounded-lg px-4 py-2">
+            <span className="text-gray-600 font-medium">Petrol</span>
+            <span className="text-lg font-bold text-green-600">
+              ₦{`${item.price}`}/L
+            </span>
+          </div>
+          <div className="flex justify-between items-center bg-gray-200 rounded-lg px-4 py-2">
+            <span className="text-gray-600 font-medium">Diesel</span>
+            <span className="text-lg font-bold text-green-600">
+              N/A
+            </span>
+          </div>
+          <div className="flex justify-between items-center bg-gray-200 rounded-lg px-4 py-2">
+            <span className="text-gray-600 font-medium">Kerosene</span>
+            <span className="text-lg font-bold text-green-600">
+              N/A
+            </span>
+          </div>
+        </div>
+      </div>
+      ))}
+      </div>
+      
+
+      
     </div>
   );
 }
