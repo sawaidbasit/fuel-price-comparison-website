@@ -6,6 +6,7 @@ import { User } from "@supabase/supabase-js";
 import PetrolTable from "../components/PetrolTable";
 import DieselTable from "../components/DieselTable";
 import KeroseneTable from "../components/KeroseneTable";
+import { Link } from "react-router-dom";
 
 interface FuelStation {
   id: number;
@@ -148,6 +149,24 @@ const visibleTablesCount = [
   filteredKerosene.length,
 ].filter(Boolean).length;
 
+const mergedData = petrolData.slice(0, 5).map((petrolItem) => {
+  const dieselItem = dieselData.find(d => d.station_name === petrolItem.station_name);
+  const keroseneItem = keroseneData.find(k => k.station_name === petrolItem.station_name);
+
+  return {
+    ...petrolItem,
+    dieselPrice: dieselItem?.price ?? null,
+    kerosenePrice: keroseneItem?.price ?? null,
+  };
+});
+
+const slugify = (text: string) => {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+};
   return (
     <div>
       <header className="bg-white shadow-sm">
@@ -235,13 +254,13 @@ const visibleTablesCount = [
           </div>
         </div>
       </main>
-          <div className="mt-20 bg-zinc-200 w-full h-[2px]"/>
+    <div className="mt-20 bg-zinc-200 w-full h-[2px]"/>
 
       <div className="mt-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {petrolData.slice(0, 5).map((item, index) => (
+      {mergedData.slice(0, 5).map((item, index) => (
+        <Link to={`/stations/${slugify(item.station_location)}`} key={index}>
         <div
-        key={index}
-        className="bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition-shadow border border-gray-200"
+          className="cursor-pointer bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition-shadow border border-gray-200"
       >
         <div className="flex items-center justify-between">
           <div>
@@ -258,28 +277,26 @@ const visibleTablesCount = [
           <div className="flex justify-between items-center bg-gray-200 rounded-lg px-4 py-2">
             <span className="text-gray-600 font-medium">Petrol</span>
             <span className="text-lg font-bold text-green-600">
-              ₦{`${item.price}`}/L
+              { item?.price ? `₦${item.price}/L` : 'NA'}
             </span>
           </div>
           <div className="flex justify-between items-center bg-gray-200 rounded-lg px-4 py-2">
             <span className="text-gray-600 font-medium">Diesel</span>
             <span className="text-lg font-bold text-green-600">
-              N/A
+            {item.dieselPrice ? `₦${item.dieselPrice}/L` : 'N/A'}
             </span>
           </div>
           <div className="flex justify-between items-center bg-gray-200 rounded-lg px-4 py-2">
             <span className="text-gray-600 font-medium">Kerosene</span>
             <span className="text-lg font-bold text-green-600">
-              N/A
+            {item.kerosenePrice ? `₦${item.kerosenePrice}/L` : 'N/A'}
             </span>
           </div>
         </div>
       </div>
+        </Link>
       ))}
       </div>
-      
-
-      
     </div>
   );
 }
