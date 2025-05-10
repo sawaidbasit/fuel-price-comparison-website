@@ -4,6 +4,7 @@ import Login from "./pages/Login";
 // import SignUp from "./pages/SignUp";
 import LogoutButton from "./pages/Logout";
 import StationList from "./components/StationList";
+import AdminPanel from "./pages/AdminPanel";
 
 export default function AppRoutes() {
   return (
@@ -13,6 +14,7 @@ export default function AppRoutes() {
           <Route path="/login" element={<Login/>} />
           <Route path="/logout" element={<LogoutButton />} />
           <Route path="/stations/:stateName" element={<StationList />} />
+          <Route path="/admin" element={<AdminPanel />} />
           {/* <Route path="/signup" element={<SignUp />} /> */}
         </Routes>
     </Router>
