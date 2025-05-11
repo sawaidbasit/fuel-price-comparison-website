@@ -5,6 +5,7 @@ import Login from "./pages/Login";
 import LogoutButton from "./pages/Logout";
 import StationList from "./components/StationList";
 import AdminPanel from "./pages/AdminPanel";
+import UserSubmissionForm from "./components/UserSubmissionForm";
 
 export default function AppRoutes() {
   return (
@@ -15,6 +16,7 @@ export default function AppRoutes() {
           <Route path="/logout" element={<LogoutButton />} />
           <Route path="/stations/:stateName" element={<StationList />} />
           <Route path="/admin" element={<AdminPanel />} />
+          <Route path="/submit" element={<UserSubmissionForm/>} />
           {/* <Route path="/signup" element={<SignUp />} /> */}
         </Routes>
     </Router>

@@ -1,5 +1,7 @@
 import { Fuel } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { supabase } from '../../lib/supabaseClient';
+import { User } from '@supabase/supabase-js';
 
 const dummyData = [
   {
@@ -61,12 +63,39 @@ const dummyData = [
 
 export default function AdminPanel() {
   const [submissions, setSubmissions] = useState(dummyData);
+  const [user, setUser] = useState<User | null>(null);
+  
 
   const updateStatus = (id:any, status: any) => {
     setSubmissions(prev =>
       prev.map(sub => (sub.id === id ? { ...sub, status } : sub))
     );
   };
+
+  useEffect(() => {
+      const checkAuth = async () => {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        setUser(user);
+      };
+      checkAuth();
+  
+      const { data: authListener } = supabase.auth.onAuthStateChange(
+        (_, session) => {
+          setUser(session?.user || null);
+        }
+      );
+  
+      return () => {
+        authListener.subscription.unsubscribe();
+      };
+    }, []);
+  
+    const handleLogout = async () => {
+      await supabase.auth.signOut();
+      setUser(null);
+    };
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -94,17 +123,16 @@ export default function AdminPanel() {
                 Lagos Fuel Price Tracker
               </h1>
             </div>
-            {/* {
-              user && ( */}
+            {
+              user && ( 
                 <button
                   // onClick={handleLogout}
                   className="bg-red-500 cursor-pointer text-white px-4 py-2 rounded"
                 >
                   Logout
                 </button>
-              {/* )
-            
-            } */}
+               )
+            } 
           </div>
         </div>
       </header>

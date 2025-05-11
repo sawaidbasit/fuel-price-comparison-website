@@ -149,16 +149,51 @@ const visibleTablesCount = [
   filteredKerosene.length,
 ].filter(Boolean).length;
 
-const mergedData = petrolData.slice(0, 5).map((petrolItem) => {
-  const dieselItem = dieselData.find(d => d.station_name === petrolItem.station_name);
-  const keroseneItem = keroseneData.find(k => k.station_name === petrolItem.station_name);
+const mergedData = petrolData
+  .reduce((acc, petrolItem) => {
+    const existingLocation = acc.find(item => 
+      item.station_location === petrolItem.station_location
+    );
 
-  return {
-    ...petrolItem,
-    dieselPrice: dieselItem?.price ?? null,
-    kerosenePrice: keroseneItem?.price ?? null,
-  };
-});
+    if (existingLocation) {
+      // Update petrol price if newer
+      if (new Date(petrolItem.last_updated) > new Date(existingLocation.last_updated)) {
+        existingLocation.petrolPrice = petrolItem.price;
+      }
+      return acc;
+    }
+
+    // Find all stations at this location (for counting)
+    const allStationsAtLocation = [
+      ...petrolData.filter(p => p.station_location === petrolItem.station_location),
+      ...dieselData.filter(d => d.station_location === petrolItem.station_location),
+      ...keroseneData.filter(k => k.station_location === petrolItem.station_location)
+    ];
+    
+    // Get unique station names
+    const uniqueStations = [...new Set(allStationsAtLocation.map(s => s.station_name))];
+    
+    // Find matching diesel and kerosene prices (same as your original logic)
+    const dieselItem = dieselData.find(d => 
+      d.station_name === petrolItem.station_name && 
+      d.station_location === petrolItem.station_location
+    );
+    
+    const keroseneItem = keroseneData.find(k => 
+      k.station_name === petrolItem.station_name && 
+      k.station_location === petrolItem.station_location
+    );
+
+    acc.push({
+      ...petrolItem,
+      petrolPrice: petrolItem.price,
+      dieselPrice: dieselItem?.price ?? null,
+      kerosenePrice: keroseneItem?.price ?? null,
+      stationCount: uniqueStations.length
+    });
+
+    return acc;
+  }, [] as any[]);
 
 const slugify = (text: string) => {
   return text
@@ -167,6 +202,25 @@ const slugify = (text: string) => {
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-');
 };
+
+  const FIELD_IDS = {
+    STATION: "entry.2005620554",  // Replace with your IDs
+    LOCATION: "entry.1045781291",
+    PETROL: "entry.1166974658",
+    EMAIL: "entry.1234567890" 
+  };
+
+  const userData = {
+    email: "user@example.com",
+    defaultLocation: "Lagos"
+  };
+
+  const generatePrefilledUrl = () => {
+    return `https://docs.google.com/forms/d/e/1OjkTzr02Zf41669SYs0VSuxoY75yYX-Tp8Z0I6SoRGg/viewform?usp=pp_url&${
+      FIELD_IDS.STATION}=${encodeURIComponent("")}&${
+      FIELD_IDS.LOCATION}=${encodeURIComponent(userData.defaultLocation)}&${
+      FIELD_IDS.EMAIL}=${encodeURIComponent(userData.email)}`;
+  };
   return (
     <div>
       <header className="bg-white shadow-sm">
@@ -205,14 +259,22 @@ const slugify = (text: string) => {
             />
 
           </div>
-          {user && (
-            <button
-              onClick={() => setShowAddForm(true)}
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-            >
-              Add New Entry
-            </button>
-          )}
+          {user ? 
+          <button
+          onClick={() => setShowAddForm(true)}
+          className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+        >
+          Add New Entry
+        </button>
+          :  <a 
+          href={"https://docs.google.com/forms/d/1OjkTzr02Zf41669SYs0VSuxoY75yYX-Tp8Z0I6SoRGg/preview"} 
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
+        >
+          Submit Fuel Prices
+        </a>}
+
         </div>
         <div
           className={`
@@ -239,6 +301,8 @@ const slugify = (text: string) => {
                 <AddPriceEntry
                   closeModal={() => setShowAddForm(false)}
                   onSuccess={handleNewEntry}
+                  isAdmin={user}
+                  userEmail={user?.email}
                 />
               </div>
             </div>
@@ -256,47 +320,46 @@ const slugify = (text: string) => {
       </main>
     <div className="mt-20 bg-zinc-200 w-full h-[2px]"/>
 
-      <div className="mt-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {mergedData.slice(0, 5).map((item, index) => (
+    <div className="mt-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {mergedData.map((item, index) => (
         <Link to={`/stations/${slugify(item.station_location)}`} key={index}>
-        <div
-          className="cursor-pointer bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition-shadow border border-gray-200"
-      >
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900">
-            {item?.station_name}
-            </h2>
-            <p className="text-zinc-500">({item?.station_location})</p>
-            
-          </div>
-          <Fuel className="h-6 w-6 text-blue-500" />
-        </div>
+          <div className="cursor-pointer h-[100%] max-h-[400px] flex flex-col justify-between bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition-shadow border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {item?.station_location}
+                </h2>
+                <p className="text-zinc-500">
+                  {item.stationCount} {item.stationCount === 1 ? 'station' : 'stations'}
+                </p>
+              </div>
+              <Fuel className="h-6 w-6 text-blue-500" />
+            </div>
 
-        <div className="mt-4 space-y-3">
-          <div className="flex justify-between items-center bg-gray-200 rounded-lg px-4 py-2">
-            <span className="text-gray-600 font-medium">Petrol</span>
-            <span className="text-lg font-bold text-green-600">
-              { item?.price ? `₦${item.price}/L` : 'NA'}
-            </span>
+            <div className="mt-4 space-y-3">
+              <div className="flex justify-between items-center bg-gray-200 rounded-lg px-4 py-2">
+                <span className="text-gray-600 font-medium">Petrol</span>
+                <span className="text-lg font-bold text-green-600">
+                  {item?.petrolPrice ? `₦${item.petrolPrice}/L` : 'NA'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center bg-gray-200 rounded-lg px-4 py-2">
+                <span className="text-gray-600 font-medium">Diesel</span>
+                <span className="text-lg font-bold text-green-600">
+                  {item.dieselPrice ? `₦${item.dieselPrice}/L` : 'N/A'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center bg-gray-200 rounded-lg px-4 py-2">
+                <span className="text-gray-600 font-medium">Kerosene</span>
+                <span className="text-lg font-bold text-green-600">
+                  {item.kerosenePrice ? `₦${item.kerosenePrice}/L` : 'N/A'}
+                </span>
+              </div>
+            </div>
           </div>
-          <div className="flex justify-between items-center bg-gray-200 rounded-lg px-4 py-2">
-            <span className="text-gray-600 font-medium">Diesel</span>
-            <span className="text-lg font-bold text-green-600">
-            {item.dieselPrice ? `₦${item.dieselPrice}/L` : 'N/A'}
-            </span>
-          </div>
-          <div className="flex justify-between items-center bg-gray-200 rounded-lg px-4 py-2">
-            <span className="text-gray-600 font-medium">Kerosene</span>
-            <span className="text-lg font-bold text-green-600">
-            {item.kerosenePrice ? `₦${item.kerosenePrice}/L` : 'N/A'}
-            </span>
-          </div>
-        </div>
-      </div>
         </Link>
       ))}
-      </div>
+    </div>
     </div>
   );
 }
