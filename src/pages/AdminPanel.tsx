@@ -1,101 +1,233 @@
+import { useEffect, useState } from 'react';
+import { supabase } from '../../lib/supabaseClient'; // Adjust import path
+import type { User } from '@supabase/supabase-js';
 import { Fuel } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabaseClient';
-import { User } from '@supabase/supabase-js';
 
-const dummyData = [
-  {
-    id: 1,
-    email: 'user1@example.com',
-    station: 'Lagos',
-    petrol: 630,
-    diesel: 710,
-    kerosene: null,
-    status: 'pending',
-  },
-  {
-    id: 2,
-    email: 'user2@example.com',
-    station: 'Abuja',
-    petrol: 645,
-    diesel: null,
-    kerosene: 800,
-    status: 'approved',
-  },
-  {
-    id: 3,
-    email: 'user3@example.com',
-    station: 'Kano',
-    petrol: null,
-    diesel: 700,
-    kerosene: 750,
-    status: 'pending',
-  },
-  {
-    id: 1,
-    email: 'user1@example.com',
-    station: 'Lagos',
-    petrol: 630,
-    diesel: 710,
-    kerosene: null,
-    status: 'rejected',
-  },
-  {
-    id: 2,
-    email: 'user2@example.com',
-    station: 'Abuja',
-    petrol: 645,
-    diesel: null,
-    kerosene: 800,
-    status: 'approved',
-  },
-  {
-    id: 3,
-    email: 'user3@example.com',
-    station: 'Kano',
-    petrol: null,
-    diesel: 700,
-    kerosene: 750,
-    status: 'pending',
-  },
-  
-];
+interface PendingSubmission {
+  id: number;
+  station_name: string;
+  station_location: string;
+  petrol_price: number;
+  diesel_price: number;
+  kerosene_price: number;
+  submitted_by: string;
+  status: 'pending' | 'approved' | 'rejected';
+  submitted_at: string;
+}
 
 export default function AdminPanel() {
-  const [submissions, setSubmissions] = useState(dummyData);
   const [user, setUser] = useState<User | null>(null);
-  
+  const [pendingData, setPendingData] = useState<PendingSubmission[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const updateStatus = (id:any, status: any) => {
-    setSubmissions(prev =>
-      prev.map(sub => (sub.id === id ? { ...sub, status } : sub))
-    );
+  // Fetch initial pending submissions
+  // useEffect(() => {
+  //   const fetchPendingSubmissions = async () => {
+  //     try {
+  //       setLoading(true);
+  //       const { data, error } = await supabase
+  //         .from('pending_submissions')
+  //         .select('*')
+  //         .order('submitted_at', { ascending: false });
+
+  //       if (error) throw error;
+  //       setPendingData(data as PendingSubmission[]);
+  //     } catch (err) {
+  //       setError(err instanceof Error ? err.message : 'Failed to fetch data');
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   fetchPendingSubmissions();
+  // }, []);
+
+  useEffect(() => {
+    const fetchPendingSubmissions = async () => {
+      try {
+        setLoading(true);
+        
+        const { data: submissions, error } = await supabase
+          .from('pending_submissions')
+          .select('*')
+          .order('submitted_at', { ascending: false });
+  
+        if (error) throw error;
+        
+        setPendingData(submissions || []);
+      } catch (error) {
+        console.error('Error fetching submissions:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPendingSubmissions();
+  }, []);
+
+  // Set up real-time subscriptions
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('pending_submissions_changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'pending_submissions' 
+        },
+        (payload) => {
+          // Type-safe payload handling
+          const newPayload = payload as {
+            eventType: 'INSERT' | 'UPDATE' | 'DELETE';
+            new: PendingSubmission;
+            old: { id: number };
+          };
+
+          setPendingData(prev => {
+            // Handle each operation type safely
+            switch (newPayload.eventType) {
+              case 'INSERT':
+                return [newPayload.new, ...prev];
+              case 'UPDATE':
+                return prev.map(item => 
+                  item.id === newPayload.new.id ? newPayload.new : item
+                );
+              case 'DELETE':
+                return prev.filter(item => item.id !== newPayload.old.id);
+              default:
+                return prev;
+            }
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  const handleApproveSubmission = async (submission: PendingSubmission) => {
+  try {
+    setLoading(true);
+
+    // 1. First insert into the respective price tables (using POST)
+    const baseRecord = {
+      station_name: submission.station_name,
+      station_location: submission.station_location,
+      last_updated: new Date().toISOString(),
+      effective_date: submission.submitted_at || new Date().toISOString(),
+      tags: [],
+    };
+
+    // Insert petrol price if exists
+    if (submission.petrol_price !== null) {
+      const { error: petrolError } = await supabase
+        .from('petrol_prices')
+        .insert({
+          ...baseRecord,
+          price: submission.petrol_price
+        });
+
+      if (petrolError) throw petrolError;
+    }
+
+    // Insert diesel price if exists
+    if (submission.diesel_price !== null) {
+      const { error: dieselError } = await supabase
+        .from('diesel_prices')
+        .insert({
+          ...baseRecord,
+          price: submission.diesel_price
+        });
+
+      if (dieselError) throw dieselError;
+    }
+
+    // Insert kerosene price if exists
+    if (submission.kerosene_price !== null) {
+      const { error: keroseneError } = await supabase
+        .from('kerosene_prices')
+        .insert({
+          ...baseRecord,
+          price: submission.kerosene_price
+        });
+
+      if (keroseneError) throw keroseneError;
+    }
+
+    // 2. Only after successful inserts, update submission status (using PATCH)
+    const { error: updateError } = await supabase
+      .from('submissions')
+      .update({ status: 'approved' })
+      .eq('id', submission.id);
+
+    if (updateError) throw updateError;
+
+    // toast.success('Prices added to respective tables!');
+    // refreshSubmissions(); // Refresh your data
+
+  } catch (error) {
+    console.error('Approval Error:', error);
+    // toast.error('Failed to add prices: ' + error.message);
+  } finally {
+    setLoading(false);
+  }
+};
+  const updateStatus = async (id: number, status: 'approved' | 'rejected') => {
+    try {
+      // Optimistic update
+      setPendingData(prev =>
+        prev.map(sub => 
+          sub.id === id ? { ...sub, status } : sub
+        )
+      );
+
+      // Database update
+      const { error } = await supabase
+        .from('pending_submissions')
+        .update({ status })
+        .eq('id', id);
+
+      if (error) throw error;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update status');
+      setPendingData(prev =>
+        prev.map(sub => 
+          sub.id === id ? { ...sub, status: 'pending' } : sub
+        )
+      );
+    }
   };
 
   useEffect(() => {
-      const checkAuth = async () => {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        setUser(user);
-      };
-      checkAuth();
-  
-      const { data: authListener } = supabase.auth.onAuthStateChange(
-        (_, session) => {
-          setUser(session?.user || null);
-        }
-      );
-  
-      return () => {
-        authListener.subscription.unsubscribe();
-      };
-    }, []);
-  
-    const handleLogout = async () => {
-      await supabase.auth.signOut();
-      setUser(null);
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
     };
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_, session) => {
+        setUser(session?.user ?? null);
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+  };
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -126,7 +258,7 @@ export default function AdminPanel() {
             {
               user && ( 
                 <button
-                  // onClick={handleLogout}
+                  onClick={handleLogout}
                   className="bg-red-500 cursor-pointer text-white px-4 py-2 rounded"
                 >
                   Logout
@@ -157,21 +289,21 @@ export default function AdminPanel() {
               </tr>
             </thead>
             <tbody>
-              {submissions.map(sub => (
+              {pendingData.map(sub => (
                 <tr
                   key={sub.id}
                   className="border-t hover:bg-gray-50 text-sm"
                 >
-                  <td className="p-4">{sub.email}</td>
-                  <td className="p-4">{sub.station}</td>
+                  <td className="p-4">{sub.submitted_by}</td>
+                  <td className="p-4">{sub.station_name}</td>
                   <td className="p-4">
-                    {sub.petrol ? `₦${sub.petrol}` : '–'}
+                    {sub.petrol_price ? `₦${sub.petrol_price}` : '–'}
                   </td>
                   <td className="p-4">
-                    {sub.diesel ? `₦${sub.diesel}` : '–'}
+                    {sub.diesel_price ? `₦${sub.diesel_price}` : '–'}
                   </td>
                   <td className="p-4">
-                    {sub.kerosene ? `₦${sub.kerosene}` : '–'}
+                    {sub.kerosene_price ? `₦${sub.kerosene_price}` : '–'}
                   </td>
                   <td className="p-4">
                     <span
@@ -189,9 +321,15 @@ export default function AdminPanel() {
                   <td className="p-4 flex gap-2">
                     {sub.status === 'pending' && (
                       <>
-                        <button
+                        {/* <button
                           onClick={() => updateStatus(sub.id, 'approved')}
                           className="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600"
+                        >
+                          Approve
+                        </button> */}
+                        <button
+                          className="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600"
+                          onClick={() => handleApproveSubmission(sub)}
                         >
                           Approve
                         </button>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Ban, Clock, Fuel, Presentation as GasStation, X } from "lucide-react";
 import { AddPriceEntry } from "../components/AddPriceEntry";
 import { supabase } from "../../lib/supabaseClient";
@@ -35,6 +35,8 @@ export default function HomePage() {
   const [dieselData, setDieselData] = useState<FuelStation[]>([]);
   const [keroseneData, setKeroseneData] = useState<FuelStation[]>([]);
   const [loading, setLoading] = useState(false);
+  const [data, setData] = useState([]);
+  const hasFetched = useRef(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -75,7 +77,7 @@ export default function HomePage() {
   
       // Dynamically update state based on the response
       responses.forEach(({ table, data, error }) => {
-        console.log(table, data)
+        // console.log(table, data)
         if (error) {
           console.error(`Error fetching ${table} data:`, error);
         } else {
@@ -198,29 +200,175 @@ const mergedData = petrolData
 const slugify = (text: string) => {
   return text
     .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/[^a-z0-9\s-]/g
+      , '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-');
 };
 
-  const FIELD_IDS = {
-    STATION: "entry.2005620554",  // Replace with your IDs
-    LOCATION: "entry.1045781291",
-    PETROL: "entry.1166974658",
-    EMAIL: "entry.1234567890" 
+useEffect(() => {
+  const fetchAndStoreData = async () => {
+    try {
+      // Skip if already fetched
+      if (hasFetched.current) return;
+      hasFetched.current = true;
+
+      // 1. Get the most recent submission timestamp from your database
+      const { data: latestSubmission } = await supabase
+        .from('pending_submissions')
+        .select('submitted_at')
+        .order('submitted_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      console.log("Latest submission from DB:", latestSubmission?.submitted_at);
+
+      // 2. Fetch from Google Sheets
+      const sheetId = '1irB6iVfprUHA200qAYSE3saKDf6j_P3xCnB_o5GXkVk';
+      const sheetName = 'Form Responses 1';
+      const response = await fetch(`https://opensheet.elk.sh/${sheetId}/${sheetName}`);
+      
+      if (!response.ok) throw new Error('Failed to fetch data');
+      
+      const formData = await response.json();
+      console.log("Raw form data:", formData);
+
+      // 3. Proper date parsing function for DD/MM/YYYY format
+      const parseCustomDate = (dateString: string) => {
+        const [day, month, year] = dateString.split(' ')[0].split('/');
+        return new Date(`${year}-${month}-${day}T${dateString.split(' ')[1]}`);
+      };
+
+      // 4. Filter and transform submissions
+      const newSubmissions = formData
+        .filter(item => {
+          if (!item.Timestamp) return false;
+          
+          const submissionTime = parseCustomDate(item.Timestamp);
+          const lastDbTime = latestSubmission?.submitted_at ? new Date(latestSubmission.submitted_at) : null;
+          
+          console.log(`Comparing: ${submissionTime} > ${lastDbTime}`);
+          return !lastDbTime || submissionTime > lastDbTime;
+        })
+        .map(item => ({
+          station_name: item['Station Name']?.trim() || '',
+          station_location: item['Location']?.trim() || '',
+          petrol_price: parseFloat(item['Petrol Price']) || 0,
+          diesel_price: parseFloat(item['Diesel Price']) || 0,
+          kerosene_price: parseFloat(item['Kerosene Price']) || 0,
+          submitted_by: item['Email']?.trim() || 'anonymous',
+          status: 'pending',
+          submitted_at: item.Timestamp ? parseCustomDate(item.Timestamp).toISOString() : new Date().toISOString()
+        }));
+
+      console.log("New submissions to insert:", newSubmissions);
+
+      // 5. Insert into Supabase if there are new submissions
+      if (newSubmissions.length > 0) {
+        const { data, error } = await supabase
+          .from('pending_submissions')
+          .insert(newSubmissions)
+          .select(); // Return inserted records
+
+        if (error) throw error;
+        
+        console.log("Inserted data:", data);
+        setData(prev => [...(prev || []), ...data]);
+      }
+      
+    } catch (err) {
+      console.error("Error:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const userData = {
-    email: "user@example.com",
-    defaultLocation: "Lagos"
-  };
+  fetchAndStoreData();
+}, []); 
 
-  const generatePrefilledUrl = () => {
-    return `https://docs.google.com/forms/d/e/1OjkTzr02Zf41669SYs0VSuxoY75yYX-Tp8Z0I6SoRGg/viewform?usp=pp_url&${
-      FIELD_IDS.STATION}=${encodeURIComponent("")}&${
-      FIELD_IDS.LOCATION}=${encodeURIComponent(userData.defaultLocation)}&${
-      FIELD_IDS.EMAIL}=${encodeURIComponent(userData.email)}`;
-  };
+// useEffect(() => {
+//   const fetchAndStoreData = async () => {
+//     try {
+//       if (hasFetched.current) return;
+//       hasFetched.current = true;
+
+//       // Call the Edge Function
+//       const { data, error } = await supabase.functions.invoke('sync-google-forms', {
+//         body: {}
+//       });
+
+//       if (error) throw error;
+      
+//       // Get updated data from database
+//       const { data: submissions, error: dbError } = await supabase
+//         .from('pending_submissions')
+//         .select('*')
+//         .order('submitted_at', { ascending: false });
+
+//       if (dbError) throw dbError;
+      
+//       setData(submissions || []);
+      
+//     } catch (err) {
+//       console.error("Error:", err);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   fetchAndStoreData();
+// }, []);
+// useEffect(() => {
+//   // Initial data fetch
+//   const fetchInitialData = async () => {
+//     const { data, error } = await supabase
+//       .from('pending_submissions')
+//       .select('*')
+//       .order('submitted_at', { ascending: false });
+    
+//     if (!error) setData(data || []);
+//   };
+//   fetchInitialData();
+
+//   // Realtime subscription
+//   const channel = supabase
+//     .channel('pending_submissions_changes')
+//     .on(
+//       'postgres_changes',
+//       {
+//         event: '*',
+//         schema: 'public',
+//         table: 'pending_submissions',
+//       },
+//       (payload) => {
+//         console.log('Realtime payload:', payload); // Debug log
+//         const { eventType, new: newRecord, old } = payload;
+        
+//         setData(prev => {
+//           switch (eventType) {
+//             case 'INSERT':
+//               return [newRecord, ...prev];
+//             case 'UPDATE':
+//               return prev.map(item => 
+//                 item.id === newRecord.id ? newRecord : item
+//               );
+//             case 'DELETE':
+//               return prev.filter(item => item.id !== old.id);
+//             default:
+//               return prev;
+//           }
+//         });
+//       }
+//     )
+//     .subscribe();
+
+//   return () => {
+//     supabase.removeChannel(channel);
+//   };
+// }, []);
+  // console.log(user, "<=== user")
+console.log(data, "<=== data")
+  // console.log(user, "<=== user")
   return (
     <div>
       <header className="bg-white shadow-sm">
@@ -243,6 +391,7 @@ const slugify = (text: string) => {
               )
             
             }
+            
           </div>
         </div>
       </header>
@@ -259,22 +408,26 @@ const slugify = (text: string) => {
             />
 
           </div>
-          {user ? 
-          <button
-          onClick={() => setShowAddForm(true)}
-          className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-        >
-          Add New Entry
-        </button>
-          :  <a 
-          href={"https://docs.google.com/forms/d/1OjkTzr02Zf41669SYs0VSuxoY75yYX-Tp8Z0I6SoRGg/preview"} 
-          target="_blank"
-          rel="noopener noreferrer"
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
-        >
-          Submit Fuel Prices
-        </a>}
 
+        {user ? (
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+            >
+              Add New Entry
+            </button>
+          </div>
+        ) : (
+          <a 
+            href={"https://docs.google.com/forms/d/1OjkTzr02Zf41669SYs0VSuxoY75yYX-Tp8Z0I6SoRGg/preview"} 
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
+          >
+            Submit Fuel Prices
+          </a>
+        )}
         </div>
         <div
           className={`
