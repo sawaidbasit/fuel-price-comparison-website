@@ -75,7 +75,7 @@ export default function HomePage() {
   
       // Dynamically update state based on the response
       responses.forEach(({ table, data, error }) => {
-        console.log(table, data)
+        // console.log(table, data)
         if (error) {
           console.error(`Error fetching ${table} data:`, error);
         } else {
@@ -203,24 +203,8 @@ const slugify = (text: string) => {
     .replace(/-+/g, '-');
 };
 
-  const FIELD_IDS = {
-    STATION: "entry.2005620554",  // Replace with your IDs
-    LOCATION: "entry.1045781291",
-    PETROL: "entry.1166974658",
-    EMAIL: "entry.1234567890" 
-  };
 
-  const userData = {
-    email: "user@example.com",
-    defaultLocation: "Lagos"
-  };
-
-  const generatePrefilledUrl = () => {
-    return `https://docs.google.com/forms/d/e/1OjkTzr02Zf41669SYs0VSuxoY75yYX-Tp8Z0I6SoRGg/viewform?usp=pp_url&${
-      FIELD_IDS.STATION}=${encodeURIComponent("")}&${
-      FIELD_IDS.LOCATION}=${encodeURIComponent(userData.defaultLocation)}&${
-      FIELD_IDS.EMAIL}=${encodeURIComponent(userData.email)}`;
-  };
+  console.log(mergedData, "<===")
   return (
     <div>
       <header className="bg-white shadow-sm">
@@ -234,12 +218,21 @@ const slugify = (text: string) => {
             </div>
             {
               user && (
-                <button
+                <div className="flex gap-5">
+                  <button
                   onClick={handleLogout}
                   className="bg-red-500 cursor-pointer text-white px-4 py-2 rounded"
                 >
                   Logout
                 </button>
+                <Link to={"/admin"}>
+                <button
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                >
+                  Manage Stations
+                </button>
+                </Link>
+                </div>
               )
             
             }
@@ -270,7 +263,7 @@ const slugify = (text: string) => {
           href={"https://docs.google.com/forms/d/1OjkTzr02Zf41669SYs0VSuxoY75yYX-Tp8Z0I6SoRGg/preview"} 
           target="_blank"
           rel="noopener noreferrer"
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
+          className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
         >
           Submit Fuel Prices
         </a>}
