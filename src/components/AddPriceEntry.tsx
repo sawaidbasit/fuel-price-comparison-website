@@ -101,7 +101,7 @@ export function AddPriceEntry({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    const toastId = toast.loading(isAdmin ? "Adding price entries..." : "Submitting for approval...");
     try {
       setLoading(true);
 
@@ -180,8 +180,10 @@ export function AddPriceEntry({
 
         // Notify admin
         await notifyAdmin();
-
-        toast.success("Your submission has been sent for approval!");
+        toast.success(
+          "Submission sent for admin approval! You'll be notified when reviewed.",
+          { id: toastId, duration: 5000 }
+        );
         onSuccess(data);
       }
 
@@ -189,7 +191,9 @@ export function AddPriceEntry({
       closeModal();
     } catch (error) {
       console.error("Submission Error:", error);
-      toast.error("Something went wrong, please try again.");
+      toast.error(error.message || "Something went wrong. Please try again.",
+        { id: toastId, duration: 5000 }
+      );
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Ban, Clock, Fuel, Presentation as GasStation, X } from "lucide-react";
+import { Ban, Clock, Fuel, Presentation as GasStation, SearchX, X } from "lucide-react";
 import { AddPriceEntry } from "../components/AddPriceEntry";
 import { supabase } from "../../lib/supabaseClient";
 import { User } from "@supabase/supabase-js";
@@ -195,6 +195,11 @@ const mergedData = petrolData
     return acc;
   }, [] as any[]);
 
+  const filteredMergedData = mergedData.filter(item =>
+    item.station_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.station_location.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
 const slugify = (text: string) => {
   return text
     .toLowerCase()
@@ -269,6 +274,23 @@ const slugify = (text: string) => {
         </a>}
 
         </div>
+         {/* No results state */}
+  {!filteredPetrol.length && !filteredDiesel.length && !filteredKerosene.length && searchQuery && (
+    <div className="mt-10 flex flex-col items-center justify-center py-12 bg-white rounded-lg shadow">
+      <SearchX className="h-16 w-16 text-gray-400 mb-4" />
+      <h3 className="text-xl font-medium text-gray-900 mb-2">No results found</h3>
+      <p className="text-gray-500">
+        Your search for "{searchQuery}" didn't match any fuel stations
+      </p>
+      <button
+        onClick={() => handleSearch('')}
+        className="mt-4 px-4 py-2 text-sm text-blue-600 hover:text-blue-800"
+      >
+        Clear search
+      </button>
+    </div>
+  )}
+
         <div
           className={`
             mt-10 gap-y-44 md:gap-y-32 justify-center grid gap-4
@@ -314,7 +336,7 @@ const slugify = (text: string) => {
     <div className="mt-20 bg-zinc-200 w-full h-[2px]"/>
 
     <div className="mt-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {mergedData.map((item, index) => (
+      {filteredMergedData.map((item, index) => (
         <Link to={`/stations/${slugify(item.station_location)}`} key={index}>
           <div className="cursor-pointer h-[100%] max-h-[400px] flex flex-col justify-between bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition-shadow border border-gray-200">
             <div className="flex items-center justify-between">

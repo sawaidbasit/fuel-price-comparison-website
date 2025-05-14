@@ -1,7 +1,8 @@
-import { Fuel } from "lucide-react";
-import React, { useCallback, useEffect, useState } from "react";
+import { Fuel, Search, SearchX } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { User } from "@supabase/supabase-js";
+import toast, { Toaster } from 'react-hot-toast';
 
 // Types
 interface FuelPrice {
@@ -22,6 +23,14 @@ interface MergedStation extends Omit<FuelPrice, "price"> {
 }
 
 const ITEMS_PER_PAGE = 10;
+
+export function LoadingSpinner() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+    </div>
+  );
+}
 
 export default function AdminPanel() {
   const [mergedStations, setMergedStations] = useState<MergedStation[]>([]);
@@ -146,6 +155,8 @@ export default function AdminPanel() {
   );
 
   const handleEdit = async (updatedData: MergedStation) => {
+    const editToast = toast.loading('Updating station...');
+
     try {
       setLoading(true);
       setError(null);
@@ -181,9 +192,16 @@ export default function AdminPanel() {
 
       await fetchData();
       setIsModalOpen(false);
+      toast.success('Station updated successfully!', {
+        id: editToast,
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Update failed");
-
+      const errorMessage = err instanceof Error ? err.message : "Update failed";
+      setError(errorMessage);
+      toast.error(`Update failed: ${errorMessage}`, {
+        id: editToast,
+      });
+  
       await fetchData();
     } finally {
       setLoading(false);
@@ -191,6 +209,7 @@ export default function AdminPanel() {
   };
 
   const handleDelete = async (stationName: string) => {
+    const deleteToast = toast.loading('Deleting station...');
     try {
       setLoading(true);
       setError(null);
@@ -240,17 +259,18 @@ export default function AdminPanel() {
           `Deletion errors: ${errors.map((e) => e.message).join(", ")}`
         );
       }
-
-      // 4. Confirm records were actually deleted
-      const { count: remainingCount } = await supabase
-        .from("petrol_prices")
-        .select("*", { count: "exact" })
-        .eq("station_name", exactStationName);
-
-      await fetchData(); // Refresh UI
+      await fetchData();
+      toast.success('Station deleted successfully!', {
+        id: deleteToast,
+      });
+      
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Deletion failed");
+      const errorMessage = err instanceof Error ? err.message : "Deletion failed";
+      setError(errorMessage);
       console.error("Delete error:", err);
+      toast.error(`Deletion failed: ${errorMessage}`, {
+        id: deleteToast,
+      });
     } finally {
       setLoading(false);
     }
@@ -261,21 +281,48 @@ export default function AdminPanel() {
     setUser(null);
   };
 
-  if (loading)
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading...
+  if (loading) return <LoadingSpinner />;
+  
+    if (error) return (
+    <div className="min-h-screen flex flex-col items-center justify-center p-4">
+      <div className="max-w-md text-center">
+        <div className="text-red-500 text-2xl mb-4">⚠️ Error</div>
+        <div className="text-gray-700 mb-6">{error}</div>
+        <button
+          onClick={() => {
+            setError(null);
+            fetchData();
+          }}
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+        >
+          Retry
+        </button>
       </div>
-    );
-  if (error)
-    return (
-      <div className="min-h-screen flex items-center justify-center text-red-500">
-        Error: {error}
-      </div>
-    );
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-100">
+      <Toaster 
+      position="top-right"
+      toastOptions={{
+        duration: 5000,
+        style: {
+          padding: '16px',
+          color:"white",
+        },
+        success: {
+          style: {
+            background: '#10B981', 
+          },
+        },
+        error: {
+          style: {
+            background: '#EF4444'
+          },
+        },
+      }}
+    />
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
@@ -302,7 +349,7 @@ export default function AdminPanel() {
           Fuel Price Management
         </h2>
 
-        <div className="mb-4">
+        {/* <div className="mb-4">
           <input
             type="text"
             placeholder="Search by station name or location..."
@@ -310,12 +357,23 @@ export default function AdminPanel() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-        </div>
+        </div> */}
+        <div className="mb-4 relative">
+  <input
+    type="text"
+    placeholder="Search by station name or location..."
+    className="p-2 pl-10 border rounded w-full max-w-md" // Added pl-10 for padding
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+  />
+  <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+</div>
 
         <div className="overflow-x-auto bg-white rounded shadow ">
           <table className="min-w-full">
             <thead>
               <tr className="bg-gray-200 text-gray-700 text-left text-sm uppercase">
+                <th className="p-4">#</th>
                 <th className="p-4">Station Name</th>
                 <th className="p-4">Location</th>
                 <th className="p-4">Petrol (₦)</th>
@@ -327,11 +385,14 @@ export default function AdminPanel() {
               </tr>
             </thead>
             <tbody>
-              {paginatedStations.map((station) => (
+              {paginatedStations.map((station, index) => {
+                const serialNumber = (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
+                return(
                 <tr
                   key={`${station.id}-${station.station_name}`}
                   className="border-t hover:bg-gray-50 text-sm"
                 >
+                  <td className="p-4 text-gray-500">{serialNumber}</td>
                   <td className="p-4">{station.station_name}</td>
                   <td className="p-4">{station.station_location}</td>
                   <td className="p-4">
@@ -371,10 +432,24 @@ export default function AdminPanel() {
                     </button>
                   </td>
                 </tr>
-              ))}
+                )
+              }
+              )}
             </tbody>
           </table>
+          <div className="overflow-x-auto bg-white rounded shadow">
+  
+            {paginatedStations.length === 0 && (
+              <div className="p-12 text-center">
+              <div className="flex items-center justify-center rounded-full mb-4">
+                <SearchX className="h-16 w-16 text-zinc-600" />
+              </div>
+              <h3 className="text-lg font-medium text-zinc-600 mb-1">No stations found</h3>
+              
+            </div>
 
+            )}
+        </div>
           {totalPages > 1 && (
             <div className="flex justify-between items-center p-4 border-t">
               <button
@@ -485,7 +560,8 @@ export default function AdminPanel() {
                 </button>
                 <button
                   onClick={() => handleEdit(editingStation)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  className="px-6 py-3 text-white text-lg font-medium rounded-lg 
+                bg-green-600 hover:bg-green-700 transition duration-300 shadow-lg"
                   disabled={loading}
                 >
                   {loading ? "Saving..." : "Save Changes"}

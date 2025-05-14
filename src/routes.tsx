@@ -19,7 +19,6 @@ const getPublicRoutes = () => (
   </>
 );
 
-// Private routes function
 const getPrivateRoutes = () => (
   <>
     <Route
@@ -30,14 +29,6 @@ const getPrivateRoutes = () => (
         </PrivateRoute>
       }
     />
-    <Route
-      path="/login"
-      element={
-        <PrivateRoute>
-          <Login />
-        </PrivateRoute>
-      }
-    />
   </>
 );
 
@@ -45,18 +36,6 @@ export default function AppRoutes() {
 
 
   return (
-    // <Router>
-    //     <Routes>
-    //       <Route path="/" element={<HomePage />} />
-    //       <Route path="/login" element={<Login/>} />
-    //       <Route path="/logout" element={<LogoutButton />} />
-    //       <Route path="/stations/:stateName" element={<StationList />} />
-    //       <Route path="/admin" element={<AdminPanel />} />
-    //       <Route path="/submit" element={<UserSubmissionForm/>} />
-    //       <Route path="/admin" element={<AdminPanel/>}/>
-    //       {/* <Route path="/signup" element={<SignUp />} /> */}
-    //     </Routes>
-    // </Router>
     <Router>
       <Routes>
         {getPublicRoutes()}
