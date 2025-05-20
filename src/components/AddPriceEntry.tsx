@@ -1,10 +1,8 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import { supabase } from "../../lib/supabaseClient";
 import { z } from "zod";
 import { parse } from "csv-parse/browser/esm";
-
-// import Papa from "papaparse";
 
 const priceEntrySchema = z.object({
   stationName: z.string().min(1, "Station name is required"),
@@ -49,12 +47,12 @@ interface AddPriceEntryProps {
   userEmail?: string;
 }
 
-export function AddPriceEntry({ 
-  closeModal, 
-  onSuccess, 
+export function AddPriceEntry({
+  closeModal,
+  onSuccess,
   existingEntry,
   isAdmin,
-  userEmail 
+  userEmail,
 }: AddPriceEntryProps) {
   const [formData, setFormData] = useState<PriceEntry>(() => {
     if (existingEntry) {
@@ -69,181 +67,128 @@ export function AddPriceEntry({
     }
     return initialFormState;
   });
-  const [csvFile, setCsvFile] = useState<File | null>(null);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [parsedCSVData, setParsedCSVData] = useState<Record<string, string>[] | null>(null);
+  const [activeTab, setActiveTab] = useState<"manual" | "csv">("manual");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [parsedData, setParsedData] = useState<any[]>([]);
+
+
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: value === "" ? undefined : 
-      name.includes("Price") ? 
-      parseFloat(value) : value,
+      [name]: value === "" ? undefined : name.includes("Price") ? parseFloat(value) : value,
     }));
   };
 
   const notifyAdmin = async () => {
     try {
-      await fetch('/api/notify-admin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      await fetch("/api/notify-admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userEmail,
           stationName: formData.stationName,
           location: formData.location,
           petrolPrice: formData.petrolPrice,
           dieselPrice: formData.dieselPrice,
-          kerosenePrice: formData.kerosenePrice
-        })
+          kerosenePrice: formData.kerosenePrice,
+        }),
       });
     } catch (error) {
-      console.error('Failed to notify admin:', error);
+      console.error("Failed to notify admin:", error);
     }
   };
 
-  async function uploadParsedEntries(entries: Record<string, string>[]) {
-  console.log("Uploading entries:", entries);
+  const uploadParsedEntries = async (entries: Record<string, string>[]) => {
+    for (const entry of entries) {
+      const parsedEffectiveDate = new Date(entry.effectiveDate).toISOString();
+      const insertOptions = {
+        station_name: entry.stationName,
+        station_location: entry.location,
+        effective_date: parsedEffectiveDate,
+        tags: [],
+        last_updated: new Date().toISOString(),
+      };
 
-  for (const entry of entries) {
-    const {
-      stationName,
-      location,
-      petrolPrice,
-      dieselPrice,
-      kerosenePrice,
-      effectiveDate,
-    } = entry;
-
-    const parsedEffectiveDate = new Date(effectiveDate).toISOString();
-
-    if (petrolPrice) {
       await supabase.from("petrol_prices").insert({
-        station_name: stationName,
-        station_location: location,
-        price: Number(petrolPrice),
-        effective_date: parsedEffectiveDate,
-        tags: [],
-        last_updated: new Date().toISOString(),
+        ...insertOptions,
+        price: entry.petrolPrice ? Number(entry.petrolPrice) : null,
       });
-    }
 
-    if (dieselPrice) {
       await supabase.from("diesel_prices").insert({
-        station_name: stationName,
-        station_location: location,
-        price: Number(dieselPrice),
-        effective_date: parsedEffectiveDate,
-        tags: [],
-        last_updated: new Date().toISOString(),
+        ...insertOptions,
+        price: entry.dieselPrice ? Number(entry.dieselPrice) : null,
       });
-    }
 
-    if (kerosenePrice) {
       await supabase.from("kerosene_prices").insert({
-        station_name: stationName,
-        station_location: location,
-        price: Number(kerosenePrice),
-        effective_date: parsedEffectiveDate,
-        tags: [],
-        last_updated: new Date().toISOString(),
+        ...insertOptions,
+        price: entry.kerosenePrice ? Number(entry.kerosenePrice) : null,
       });
     }
-  }
-}
-
-
-
-  function handleCSVUpload(event: React.ChangeEvent<HTMLInputElement>) {
-  const file = event.target.files?.[0];
-  if (!file) return;
-
-    setLoading(true);
-
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    const text = e.target?.result as string;
-    parse(
-      text,
-      {
-        columns: true,
-        skip_empty_lines: true,
-        trim: true,
-      },
-      async (err, records: Record<string, string>[]) => {
-        if (err) {
-          console.error("CSV Parse Error:", err);
-          toast.error("Failed to parse CSV file.");
-          return;
-        }
-        console.log("Parsed CSV Records:", records);
-        await uploadParsedEntries(records);
-      }
-    );
   };
 
-  reader.readAsText(file);
-}
 
 
-function parseCSV(csv: string): Record<string, string>[] {
-  const lines = csv.trim().split("\n");
-  const headers = lines[0].split(",").map(h => h.trim());
-
-  return lines.slice(1).map(line => {
-    const values = line.split(",").map(v => v.trim());
-    const obj: Record<string, string> = {};
-    headers.forEach((header, i) => {
-      obj[header] = values[i] ?? "";
-    });
-    return obj;
-  });
-}
+  const handleUpload = () => {
+    if (parsedData.length > 0) {
+      onUpload(parsedData);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const toastId = toast.loading(isAdmin ? "Adding price entries..." : "Submitting for approval...");
-    try {
-      setLoading(true);
+  e.preventDefault();
+  const toastId = toast.loading(isAdmin ? "Adding price entries..." : "Submitting for approval...");
+  try {
+    setLoading(true);
+
+    if (parsedCSVData && isAdmin) {
+      await uploadParsedEntries(parsedCSVData);
+      toast.success("CSV entries uploaded successfully!", { id: toastId });
+      setParsedCSVData(null);
+      onSuccess(parsedCSVData); // Add this line to trigger UI update
+      setTimeout(() => closeModal(), 1000);
+      return;
+    }
 
       const validationResult = priceEntrySchema.safeParse(formData);
       if (!validationResult.success) {
         const newErrors: Record<string, string> = {};
         validationResult.error.errors.forEach((err) => {
-            if (err.path[0]) newErrors[err.path[0].toString()] = err.message;
+          if (err.path[0]) newErrors[err.path[0].toString()] = err.message;
         });
         setErrors(newErrors);
-        toast.error("Please fix the form errors");
+        toast.error("Please fix the form errors", { id: toastId });
         setLoading(false);
         return;
       }
 
       setErrors({});
+      const { petrolPrice, dieselPrice, kerosenePrice } = formData;
 
       if (isAdmin) {
-        // Admin can directly add to the main tables
-        const petrolPrice = formData.petrolPrice ?? null;
-        const dieselPrice = formData.dieselPrice ?? null;
-        const kerosenePrice = formData.kerosenePrice ?? null;
-
-        const priceData = [
-            { tableName: "petrol_prices", price: petrolPrice },
-            { tableName: "diesel_prices", price: dieselPrice },
-            { tableName: "kerosene_prices", price: kerosenePrice },
+        const entries = [
+          { tableName: "petrol_prices", price: petrolPrice },
+          { tableName: "diesel_prices", price: dieselPrice },
+          { tableName: "kerosene_prices", price: kerosenePrice },
         ];
 
         const allInsertedData: any[] = [];
 
-        for (const { tableName, price } of priceData) {
-          if (price !== null) {
+        for (const { tableName, price } of entries) {
+          if (price !== null && price !== undefined) {
             const { data, error } = await supabase
               .from(tableName)
               .insert([
                 {
                   station_name: formData.stationName,
                   station_location: formData.location,
-                  price: price,
+                  price,
                   tags: [],
                   last_updated: new Date().toISOString(),
                   effective_date: formData.effectiveDate,
@@ -257,80 +202,103 @@ function parseCSV(csv: string): Record<string, string>[] {
           }
         }
 
-        toast.success("Price entries added successfully!");
+        toast.success("Price entries added successfully!", { id: toastId });
         onSuccess(allInsertedData);
       } else {
-        // Regular users create pending submissions
         const { data, error } = await supabase
-          .from('submissions')
+          .from("submissions")
           .insert([
             {
               station_name: formData.stationName,
               station_location: formData.location,
-              petrol_price: formData.petrolPrice,
-              diesel_price: formData.dieselPrice,
-              kerosene_price: formData.kerosenePrice,
+              petrol_price: petrolPrice,
+              diesel_price: dieselPrice,
+              kerosene_price: kerosenePrice,
               effective_date: formData.effectiveDate,
               submitted_by: userEmail,
-              status: 'pending'
-            }
+              status: "pending",
+            },
           ])
           .select()
           .single();
 
         if (error) throw error;
 
-        // Notify admin
         await notifyAdmin();
-        toast.success(
-          "Submission sent for admin approval! You'll be notified when reviewed.",
-          { id: toastId, duration: 5000 }
-        );
+        toast.success("Submission sent for admin approval!", { id: toastId });
         onSuccess(data);
       }
 
       setFormData(initialFormState);
       closeModal();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Submission Error:", error);
-      toast.error(error.message || "Something went wrong. Please try again.",
-        { id: toastId, duration: 5000 }
-      );
+      toast.error(error.message || "Something went wrong.", { id: toastId });
     } finally {
       setLoading(false);
     }
-  };    
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  setFileName(file.name);
+
+  const text = await file.text();
+
+  parse(
+    text,
+    {
+      columns: true,
+      skip_empty_lines: true,
+      trim: true,
+    },
+    (err, records: Record<string, string>[]) => {
+      if (err) {
+        console.error("CSV Parse Error:", err);
+        toast.error("Failed to parse CSV file");
+        return;
+      }
+
+      setParsedData(records);
+      setParsedCSVData(records);
+      toast.success("CSV file parsed successfully");
+    }
+  );
+};
+
 
   return (
-    <div className="max-w-2xl mx-auto p-3 bg-white rounded-2xl">
+    <div className="">
       <Toaster position="top-right" />
-
       {!isAdmin && (    
-        <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400">
-          <p className="text-yellow-700">
+        <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded-md">
+          <p className="text-yellow-700 text-sm">
             Your submission will be reviewed by an admin before being published.
           </p>
         </div>
       )}
 
-{isAdmin && (
-  <div className="mt-6">
-    <label className="block text-sm font-semibold text-gray-700 mb-1">
-      Upload CSV File
-    </label>
-    <input
-      type="file"
-      accept=".csv"
-      onChange={handleCSVUpload}
-      className="mb-4 w-full border rounded px-4 py-2"
-    />
-  </div>
-)}
+      {/* Tabs */}
+      <div className="flex justify-center mb-4 w-full">
+        <button
+          className={`w-full px-4 py-2 rounded-l-md ${activeTab === "manual" ? "bg-green-600 text-white" : "bg-gray-200"}`}
+          onClick={() => setActiveTab("manual")}
+        >
+          Manual Entry
+        </button>
+        <button
+          className={`w-full px-4 py-2 rounded-r-md ${activeTab === "csv" ? "bg-green-600 text-white" : "bg-gray-200"}`}
+          onClick={() => setActiveTab("csv")}
+        >
+          Upload CSV
+        </button>
+      </div>
 
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Existing form fields remain the same */}
-        {/* ... */}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {activeTab === "manual" ? (
+          <div className="space-y-6">
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-1">
             Station Name
@@ -400,23 +368,49 @@ function parseCSV(csv: string): Record<string, string>[] {
               className="w-full px-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-500"
             />
           </div>
-
         <button
           type="submit"
           className="w-full flex justify-center items-center gap-2 px-6 py-3 text-white text-lg font-medium rounded-lg 
                 bg-green-600 hover:bg-green-700 transition duration-300 shadow-lg"
           disabled={loading}
         >
-          {loading ? (
-            <div className="flex justify-center items-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-white"></div>
-            </div>
-          ) : isAdmin ? (
-            "Add Price Entry"
-          ) : (
-            "Submit for Approval"
-          )}
+          {loading ? "Processing..." : "Add Price Entry"}
         </button>
+          </div>
+        ) : (
+          // <input type="file" accept=".csv" onChange={handleCSVUpload} />
+          <div className="space-y-4  flex w-full justify-between flex-col  mt-4">
+          <div className="space-y-2">
+            <input
+            ref={inputRef}
+            type="file"
+            accept=".csv"
+            onChange={handleFileChange}
+            className="block w-full border text-center mx-auto p-4 rounded-xl text-sm text-gray-500 file:mr-4 file:py-2 file:px-4
+            file:rounded-md file:border-0 file:text-sm file:font-semibold
+            file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100
+            cursor-pointer"
+          />
+
+          {fileName && (
+            <div className="text-sm text-gray-700">
+              Selected File: <span className="font-medium">{fileName}</span>
+            </div>
+          )}
+          </div>
+
+          <button
+            onClick={handleUpload}
+            className="w-full flex justify-center items-center gap-2 px-6 py-3 text-white text-lg font-medium rounded-lg 
+                bg-green-600 hover:bg-green-700 transition duration-300 shadow-lg"
+          disabled={loading || !parsedData.length}
+          >
+            Upload
+          </button>
+        </div>
+        )}
+
+        
       </form>
     </div>
   );
