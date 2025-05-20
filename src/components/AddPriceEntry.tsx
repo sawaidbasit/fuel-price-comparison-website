@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import { supabase } from "../../lib/supabaseClient";
 import { z } from "zod";
+import { parse } from "csv-parse/browser/esm";
+
 // import Papa from "papaparse";
 
 const priceEntrySchema = z.object({
@@ -102,51 +104,85 @@ export function AddPriceEntry({
   };
 
   async function uploadParsedEntries(entries: Record<string, string>[]) {
-      console.log("Uploading entries:", entries); // ✅ Debug log
-  for (const entry of entries) {
-    const { stationName, location, petrolPrice, dieselPrice, kerosenePrice, effectiveDate } = entry;
+  console.log("Uploading entries:", entries);
 
-    // Conditionally insert into the correct table(s)
+  for (const entry of entries) {
+    const {
+      stationName,
+      location,
+      petrolPrice,
+      dieselPrice,
+      kerosenePrice,
+      effectiveDate,
+    } = entry;
+
+    const parsedEffectiveDate = new Date(effectiveDate).toISOString();
+
     if (petrolPrice) {
       await supabase.from("petrol_prices").insert({
-        stationName,
-        location,
+        station_name: stationName,
+        station_location: location,
         price: Number(petrolPrice),
-        effectiveDate,
+        effective_date: parsedEffectiveDate,
+        tags: [],
+        last_updated: new Date().toISOString(),
       });
     }
+
     if (dieselPrice) {
       await supabase.from("diesel_prices").insert({
-        stationName,
-        location,
+        station_name: stationName,
+        station_location: location,
         price: Number(dieselPrice),
-        effectiveDate,
+        effective_date: parsedEffectiveDate,
+        tags: [],
+        last_updated: new Date().toISOString(),
       });
     }
+
     if (kerosenePrice) {
       await supabase.from("kerosene_prices").insert({
-        stationName,
-        location,
+        station_name: stationName,
+        station_location: location,
         price: Number(kerosenePrice),
-        effectiveDate,
+        effective_date: parsedEffectiveDate,
+        tags: [],
+        last_updated: new Date().toISOString(),
       });
     }
   }
 }
 
 
+
   function handleCSVUpload(event: React.ChangeEvent<HTMLInputElement>) {
   const file = event.target.files?.[0];
   if (!file) return;
 
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const text = e.target?.result as string;
-    const parsedData = parseCSV(text);
-    console.log("Parsed CSV:", parsedData);
-    uploadParsedEntries(parsedData);
+    setLoading(true);
 
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const text = e.target?.result as string;
+    parse(
+      text,
+      {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true,
+      },
+      async (err, records: Record<string, string>[]) => {
+        if (err) {
+          console.error("CSV Parse Error:", err);
+          toast.error("Failed to parse CSV file.");
+          return;
+        }
+        console.log("Parsed CSV Records:", records);
+        await uploadParsedEntries(records);
+      }
+    );
   };
+
   reader.readAsText(file);
 }
 
