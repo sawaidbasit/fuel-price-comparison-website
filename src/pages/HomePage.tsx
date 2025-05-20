@@ -275,7 +275,7 @@ const slugify = (text: string) => {
 
         </div>
          {/* No results state */}
-  {!filteredPetrol.length && !filteredDiesel.length && !filteredKerosene.length && searchQuery && (
+  {/* {!filteredPetrol.length && !filteredDiesel.length && !filteredKerosene.length && searchQuery && (
     <div className="mt-10 flex flex-col items-center justify-center py-12 bg-white rounded-lg shadow">
       <SearchX className="h-16 w-16 text-gray-400 mb-4" />
       <h3 className="text-xl font-medium text-gray-900 mb-2">No results found</h3>
@@ -289,7 +289,60 @@ const slugify = (text: string) => {
         Clear search
       </button>
     </div>
-  )}
+  )} */}
+  {!filteredPetrol.length && !filteredDiesel.length && !filteredKerosene.length ? (
+  searchQuery ? (
+    <div className="mt-10 flex flex-col items-center justify-center py-12 ">
+      <SearchX className="h-16 w-16 text-gray-400 mb-4" />
+      <h3 className="text-xl font-medium text-gray-900 mb-2">No results found</h3>
+      <p className="text-gray-500">
+        Your search for "{searchQuery}" didn't match any fuel stations
+      </p>
+      <button
+        onClick={() => handleSearch('')}
+        className="mt-4 px-4 py-2 text-sm text-blue-600 hover:text-blue-800"
+      >
+        Clear search
+      </button>
+    </div>
+  ) : (
+    // <div className="mt-10 flex flex-col items-center justify-center py-12 bg-white rounded-lg shadow">
+    //   <Ban className="h-16 w-16 text-gray-400 mb-4" />
+    //   <h3 className="text-xl font-medium text-gray-900 mb-2">No stations available</h3>
+    //   <p className="text-gray-500">
+    //     There are currently no fuel stations in the database
+    //   </p>
+    // </div>
+
+    user ? (
+      <div className="text-center py-12">
+  <div className="mx-auto w-24 h-24 flex items-center justify-center">
+    {/* <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg> */}
+    <SearchX className="h-16 w-16 text-gray-400 mb-4" />
+  </div>
+  <h3 className="text-lg font-medium text-gray-900 mb-1">No stations found</h3>
+  <p className="text-gray-500 mb-6">There are currently no fuel stations in our database.</p>
+  <button
+    onClick={() => setShowAddForm(true)}
+    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+  >
+    Add Your First Station
+  </button>
+</div>
+    ) : (
+      <div className="mt-10 flex flex-col items-center justify-center py-12">
+        <Ban className="h-16 w-16 text-gray-400 mb-4" />
+        <h3 className="text-xl font-medium text-gray-900 mb-2">No stations available</h3>
+        <p className="text-gray-500">
+          There are currently no fuel stations in the database
+        </p>
+      </div>
+    )
+   
+  )
+) : null}
 
         <div
           className={`
@@ -337,7 +390,7 @@ const slugify = (text: string) => {
           </div>
         </div>
       </main>
-    <div className="mt-20 bg-zinc-200 w-full h-[2px]"/>
+    <div className={`${mergedData.length ?'mt-20 bg-zinc-200 w-full h-[2px]' : 'hidden'}`}/>
 
     <div className="mt-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {filteredMergedData.map((item, index) => (
