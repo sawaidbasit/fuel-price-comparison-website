@@ -293,7 +293,7 @@ const slugify = (text: string) => {
 
         <div
           className={`
-            mt-10 gap-y-44 md:gap-y-32 justify-center grid gap-4
+            mt-20 gap-y-44 md:gap-y-32 justify-center grid gap-4
             ${visibleTablesCount === 1 ? 'grid-cols-1 ' : ''}
             ${visibleTablesCount === 2 ? 'grid-cols-2 max-md:grid-cols-1' : ''}
             ${visibleTablesCount >= 3 ? 'lg:grid-cols-3 md:grid-cols-2 max-md:grid-cols-1' : ''}
@@ -323,12 +323,16 @@ const slugify = (text: string) => {
             </div>
           )}
           <div className={`${!filteredPetrol.length && 'hidden'}`}>
+
+        <h1 className="text-3xl text-center mr-20 text-md -mt-1 font-bold text-[#616161]">Petrol</h1>
           <PetrolTable data={filteredPetrol.slice(0,5)} loading={loading}/>
           </div>
           <div className={`${!filteredDiesel.length && 'hidden'}`}>
+            <h1 className="text-3xl text-center mr-20 text-md -mt-1 font-bold text-[#616161]">Diesel</h1>
           <DieselTable data={filteredDiesel.slice(0,5)} loading={loading}/>
           </div>
           <div className={`${!filteredKerosene.length && 'hidden'}`}>
+            <h1 className="text-3xl text-center mr-20 text-md -mt-1 font-bold text-[#616161]">Kerosene</h1>
           <KeroseneTable data={filteredKerosene.slice(0,5)} loading={loading}/>
           </div>
         </div>

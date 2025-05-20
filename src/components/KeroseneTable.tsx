@@ -170,10 +170,9 @@ export default function KeroseneTable({ data, loading }: { data: FuelStation[], 
           </g>
         </svg>
       </div>
-      <div className="text-white absolute top-16 md:top-16 mr-[87px] max-w-[300px] px-4 z-20 text-center">
-        <h3 className="text-2xl font-semibold">Kerosene</h3>
 
-        <h1 className="text-xl text-md -mt-1 font-bold flex items-center justify-center">
+        <div className="text-white items-center absolute !top-20 mr-[90px] max-w-[300px] px-4 z-20 text-center">
+        <h1 className="text-xl text-md font-bold flex items-center justify-center">
           ₦
           {loading ? (
             <span className="mr-2 flex justify-center items-center">

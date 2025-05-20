@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import { supabase } from "../../lib/supabaseClient";
 import { z } from "zod";
+// import Papa from "papaparse";
 
 const priceEntrySchema = z.object({
   stationName: z.string().min(1, "Station name is required"),
@@ -66,7 +67,8 @@ export function AddPriceEntry({
     }
     return initialFormState;
   });
-  
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
@@ -98,6 +100,70 @@ export function AddPriceEntry({
       console.error('Failed to notify admin:', error);
     }
   };
+
+  async function uploadParsedEntries(entries: Record<string, string>[]) {
+      console.log("Uploading entries:", entries); // ✅ Debug log
+  for (const entry of entries) {
+    const { stationName, location, petrolPrice, dieselPrice, kerosenePrice, effectiveDate } = entry;
+
+    // Conditionally insert into the correct table(s)
+    if (petrolPrice) {
+      await supabase.from("petrol_prices").insert({
+        stationName,
+        location,
+        price: Number(petrolPrice),
+        effectiveDate,
+      });
+    }
+    if (dieselPrice) {
+      await supabase.from("diesel_prices").insert({
+        stationName,
+        location,
+        price: Number(dieselPrice),
+        effectiveDate,
+      });
+    }
+    if (kerosenePrice) {
+      await supabase.from("kerosene_prices").insert({
+        stationName,
+        location,
+        price: Number(kerosenePrice),
+        effectiveDate,
+      });
+    }
+  }
+}
+
+
+  function handleCSVUpload(event: React.ChangeEvent<HTMLInputElement>) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const text = e.target?.result as string;
+    const parsedData = parseCSV(text);
+    console.log("Parsed CSV:", parsedData);
+    uploadParsedEntries(parsedData);
+
+  };
+  reader.readAsText(file);
+}
+
+
+function parseCSV(csv: string): Record<string, string>[] {
+  const lines = csv.trim().split("\n");
+  const headers = lines[0].split(",").map(h => h.trim());
+
+  return lines.slice(1).map(line => {
+    const values = line.split(",").map(v => v.trim());
+    const obj: Record<string, string> = {};
+    headers.forEach((header, i) => {
+      obj[header] = values[i] ?? "";
+    });
+    return obj;
+  });
+}
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -197,19 +263,34 @@ export function AddPriceEntry({
     } finally {
       setLoading(false);
     }
-  };   
+  };    
 
   return (
     <div className="max-w-2xl mx-auto p-3 bg-white rounded-2xl">
       <Toaster position="top-right" />
 
-      {!isAdmin && (
+      {!isAdmin && (    
         <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400">
           <p className="text-yellow-700">
             Your submission will be reviewed by an admin before being published.
           </p>
         </div>
       )}
+
+{isAdmin && (
+  <div className="mt-6">
+    <label className="block text-sm font-semibold text-gray-700 mb-1">
+      Upload CSV File
+    </label>
+    <input
+      type="file"
+      accept=".csv"
+      onChange={handleCSVUpload}
+      className="mb-4 w-full border rounded px-4 py-2"
+    />
+  </div>
+)}
+
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Existing form fields remain the same */}
