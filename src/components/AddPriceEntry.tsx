@@ -253,7 +253,8 @@ export function AddPriceEntry({
       columns: true,
       skip_empty_lines: true,
       trim: true,
-      delimiter: '|',
+      delimiter: ',',
+      quote: '"',   
     },
     (err, records: Record<string, string>[]) => {
       if (err) {
