@@ -151,7 +151,7 @@ export function AddPriceEntry({
       await uploadParsedEntries(parsedCSVData);
       toast.success("CSV entries uploaded successfully!", { id: toastId });
       setParsedCSVData(null);
-      onSuccess(parsedCSVData); // Add this line to trigger UI update
+      onSuccess(parsedCSVData);
       setTimeout(() => closeModal(), 1000);
       return;
     }
@@ -248,11 +248,12 @@ export function AddPriceEntry({
   const text = await file.text();
 
   parse(
-    text,
+  text,
     {
       columns: true,
       skip_empty_lines: true,
       trim: true,
+      delimiter: '|',
     },
     (err, records: Record<string, string>[]) => {
       if (err) {

@@ -12,18 +12,18 @@ interface FuelStation {
   effective_date?: string;
 }
 
-export default function DieselTable({ data, loading }: { data: FuelStation[], loading: boolean }) {
-  const [sortedData, setSortedData] = useState(data);
+export default function DieselTable({ data, loading, fullData }: { data: FuelStation[], loading: boolean, fullData: FuelStation[] }) {
+  const [sortedData, setSortedData] = useState(fullData);
   const [ascending, setAscending] = useState(true);
   const [lowestPriceStation, setLowestPriceStation] =
     useState<FuelStation | null>(null);
 
     useEffect(() => {
-      if (!data || data.length === 0) return;
+      if (!fullData || fullData.length === 0) return;
     
-      const stationsWithPrice = data.filter(station => typeof station.price === 'number');
+      const stationsWithPrice = fullData.filter(station => typeof station.price === 'number');
     
-      setSortedData([...data]);
+      setSortedData([...fullData]);
     
       if (stationsWithPrice.length > 0) {
         setLowestPriceStation(

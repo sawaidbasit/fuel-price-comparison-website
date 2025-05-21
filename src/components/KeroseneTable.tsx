@@ -12,18 +12,18 @@ interface FuelStation {
   effective_date?: string;
 }
 
-export default function KeroseneTable({ data, loading }: { data: FuelStation[], loading: boolean }) {
-  const [sortedData, setSortedData] = useState(data);
+export default function KeroseneTable({ data, loading, fullData }: { data: FuelStation[], loading: boolean, fullData: FuelStation[] }) {
+  const [sortedData, setSortedData] = useState(fullData);
   const [ascending, setAscending] = useState(true);
   const [lowestPriceStation, setLowestPriceStation] =
     useState<FuelStation | null>(null);
 
     useEffect(() => {
-      if (!data || data.length === 0) return;
+      if (!fullData || fullData.length === 0) return;
     
-      const stationsWithPrice = data.filter(station => typeof station.price === 'number');
+      const stationsWithPrice = fullData.filter(station => typeof station.price === 'number');
     
-      setSortedData([...data]);
+      setSortedData([...fullData]);
     
       if (stationsWithPrice.length > 0) {
         setLowestPriceStation(
@@ -172,6 +172,17 @@ export default function KeroseneTable({ data, loading }: { data: FuelStation[], 
       </div>
 
         <div className="text-white items-center absolute !top-20 mr-[90px] max-w-[300px] px-4 z-20 text-center">
+        {/* <h1 className="text-xl text-md font-bold flex items-center justify-center">
+          ₦
+          {loading ? (
+            <span className="mr-2 flex justify-center items-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-t-white border-gray-300"></div>
+            </span>
+          ) : (
+            lowestPriceStation?.price
+          )}
+          <span className="px-1">/L</span>
+        </h1> */}
         <h1 className="text-xl text-md font-bold flex items-center justify-center">
           ₦
           {loading ? (
