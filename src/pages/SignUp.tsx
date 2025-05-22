@@ -27,8 +27,6 @@ export default function Signup() {
         return;
     }
 
-    console.log("Attempting signup with:", email, password);
-    
     const { data, error } = await supabase.auth.signUp({
         email: email,
         password: password,
@@ -40,10 +38,8 @@ export default function Signup() {
         }
     });
 
-    console.log("Supabase Response:", data, error);
 
     if (error) {
-        console.error("Signup error:", error);
         setError(error.message);
         return;
     }
@@ -54,9 +50,7 @@ export default function Signup() {
         setError("Signup failed. Please try again.");
         return;
     }
-    
-    console.log("✅ User Created with ID:", user?.id || "❌ No user ID!");
-    
+        
     const { error: profileError } = await supabase.from("profiles").insert([
       {
           id: user.id,  

@@ -180,7 +180,6 @@ export default function AdminPanel() {
         )
       );
 
-      console.log(updateResults, "<=== updateResult");
       const errors = updateResults.map((res) => res.error).filter(Boolean);
       if (errors.length > 0) {
         throw new Error(
@@ -230,8 +229,6 @@ export default function AdminPanel() {
 
       const exactStationName = verifiedStation.station_name;
 
-      console.log("Deleting station:", exactStationName);
-      // 2. Execute deletions with exact name matching
       const deleteResults = await Promise.all([
         supabase
           .from("petrol_prices")
@@ -250,7 +247,6 @@ export default function AdminPanel() {
           .throwOnError(),
       ]);
 
-      console.log("Delete results:", deleteResults);
 
       // 3. Verify deletions occurred
       const errors = deleteResults.map((r) => r.error).filter(Boolean);
@@ -323,26 +319,6 @@ export default function AdminPanel() {
         },
       }}
     />
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Fuel className="h-10 w-10 text-green-600" />
-              <h1 className="ml-2 text-2xl font-bold text-gray-900">
-                Lagos Fuel Price Tracker
-              </h1>
-            </div>
-            {user && (
-              <button
-                onClick={handleLogout}
-                className="bg-red-500 cursor-pointer text-white px-4 py-2 rounded"
-              >
-                Logout
-              </button>
-            )}
-          </div>
-        </div>
-      </header>
 
       <main className="p-6 max-w-7xl mx-auto mt-5">
         <h2 className="text-xl font-semibold text-gray-700 mb-4">

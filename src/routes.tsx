@@ -7,6 +7,7 @@ import StationList from "./components/StationList";
 import AdminPanel from "./pages/AdminPanel";
 import UserSubmissionForm from "./components/UserSubmissionForm";
 import PrivateRoute from "./components/PrivateRoute";
+import Layout from "./components/layout";
 
 // Public routes function
 const getPublicRoutes = () => (
@@ -37,10 +38,12 @@ export default function AppRoutes() {
 
   return (
     <Router>
-      <Routes>
+      <Layout>
+        <Routes>
         {getPublicRoutes()}
         {getPrivateRoutes()}
       </Routes>
+      </Layout>
     </Router>
   );
 }
