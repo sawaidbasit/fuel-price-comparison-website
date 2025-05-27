@@ -315,7 +315,7 @@ export default function AdminPanel() {
       }}
     />
 
-      <main className="p-6 max-w-7xl mx-auto mt-5">
+      <main className="p-6 max-w-7xl mx-auto">
         <h2 className="text-xl font-semibold text-gray-700 mb-4">
           Fuel Price Management
         </h2>
@@ -331,10 +331,10 @@ export default function AdminPanel() {
           <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
         </div>
 
-        <div className="overfl  ow-x-auto bg-white rounded shadow ">
+        <div className="overflow-x-auto bg-white rounded shadow ">
           <table className="min-w-full">
-            <thead>
-              <tr className="bg-gray-200 text-gray-700 text-left text-sm uppercase">
+            <thead >
+              <tr className="bg-gray-200 text-gray-700 items-start text-left text-sm uppercase">
                 <th className="p-4">#</th>
                 <th className="p-4">Station Name</th>
                 <th className="p-4">Location</th>
