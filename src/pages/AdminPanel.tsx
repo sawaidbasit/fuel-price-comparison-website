@@ -1,10 +1,9 @@
-import { Fuel, Search, SearchX } from "lucide-react";
+import { Clock, Search, SearchX } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { User } from "@supabase/supabase-js";
 import toast, { Toaster } from 'react-hot-toast';
 
-// Types
 interface FuelPrice {
   id: number;
   station_name: string;
@@ -26,9 +25,10 @@ const ITEMS_PER_PAGE = 10;
 
 export function LoadingSpinner() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-    </div>
+    <div className="mt-10 flex flex-col items-center justify-center py-12">
+    <Clock className="h-12 w-12 text-gray-400 mb-4 animate-spin" />
+    <h3 className="text-lg font-medium text-gray-700">Loading stations...</h3>
+  </div>
   );
 }
 
@@ -129,7 +129,7 @@ export default function AdminPanel() {
       }
     );
 
-    fetchData(); // Fetch data after auth check
+    fetchData();
 
     return () => {
       authListener.subscription.unsubscribe();
@@ -252,7 +252,7 @@ export default function AdminPanel() {
       const errors = deleteResults.map((r) => r.error).filter(Boolean);
       if (errors.length > 0) {
         throw new Error(
-          `Deletion errors: ${errors.map((e) => e.message).join(", ")}`
+          `Deletion errors: ${errors.map((e: any) => e.message).join(", ")}`
         );
       }
       await fetchData();
@@ -270,11 +270,6 @@ export default function AdminPanel() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
   };
 
   if (loading) return <LoadingSpinner />;
@@ -325,27 +320,18 @@ export default function AdminPanel() {
           Fuel Price Management
         </h2>
 
-        {/* <div className="mb-4">
+        <div className="mb-4 relative">
           <input
             type="text"
             placeholder="Search by station name or location..."
-            className="p-2 border rounded w-full max-w-md"
+            className="p-2 pl-10 border rounded w-full max-w-md"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-        </div> */}
-        <div className="mb-4 relative">
-  <input
-    type="text"
-    placeholder="Search by station name or location..."
-    className="p-2 pl-10 border rounded w-full max-w-md" // Added pl-10 for padding
-    value={searchTerm}
-    onChange={(e) => setSearchTerm(e.target.value)}
-  />
-  <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-</div>
+          <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+        </div>
 
-        <div className="overflow-x-auto bg-white rounded shadow ">
+        <div className="overfl  ow-x-auto bg-white rounded shadow ">
           <table className="min-w-full">
             <thead>
               <tr className="bg-gray-200 text-gray-700 text-left text-sm uppercase">

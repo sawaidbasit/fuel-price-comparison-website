@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
-import { Fuel } from 'lucide-react';
+import { Clock, Fuel } from 'lucide-react';
 
 interface FuelStation {
   station_name: string;
@@ -104,7 +104,11 @@ const StationListingPage = () => {
   return (
     <div className="min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {loading ? (
-        <p className="text-center text-gray-600">Loading...</p>
+        // <p className="text-center text-gray-600">Loading...</p>
+        <div className="mt-10 flex flex-col items-center justify-center py-12">
+            <Clock className="h-12 w-12 text-gray-400 mb-4 animate-spin" />
+            <h3 className="text-lg font-medium text-gray-700">Loading stations...</h3>
+          </div>
       ) : Object.keys(groupedData).length === 0 ? (
         <p className="text-center text-gray-600">No stations found.</p>
       ) : (
