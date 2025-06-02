@@ -35,8 +35,8 @@ const StationListingPage = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const tables = ['petrol_prices', 'diesel_prices', 'kerosene_prices'];
-      const fuelTypeMap = {
+      const tables = ['petrol_prices', 'diesel_prices', 'kerosene_prices'] as const;
+      const fuelTypeMap: Record<typeof tables[number], 'petrol' | 'diesel' | 'kerosene'> = {
         petrol_prices: 'petrol',
         diesel_prices: 'diesel',
         kerosene_prices: 'kerosene',
@@ -82,7 +82,7 @@ const StationListingPage = () => {
       const onlyThisLocation = Object.keys(finalGrouped).find(
         (loc) => slugify(loc) === stateName?.toLowerCase()
       );
-      
+
       
       if (onlyThisLocation) {
         setGroupedData({ [onlyThisLocation]: finalGrouped[onlyThisLocation] });
@@ -104,7 +104,7 @@ const StationListingPage = () => {
   return (
     <div className="min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {loading ? (
-        // <p className="text-center text-gray-600">Loading...</p>
+        
         <div className="mt-10 flex flex-col items-center justify-center py-12">
             <Clock className="h-12 w-12 text-gray-400 mb-4 animate-spin" />
             <h3 className="text-lg font-medium text-gray-700">Loading stations...</h3>

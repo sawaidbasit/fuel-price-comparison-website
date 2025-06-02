@@ -26,11 +26,6 @@ interface FuelStation {
   effective_date?: string;
 }
 
-const mockAuthState = {
-  isAuthenticated: true,
-  isAdmin: true,
-};
-
 export default function HomePage() {
   const [showAddForm, setShowAddForm] = useState(false);
 
@@ -155,74 +150,6 @@ export default function HomePage() {
     filteredKerosene.length,
   ].filter(Boolean).length;
 
-  const mergedData = petrolData.reduce((acc, petrolItem) => {
-    const existingLocation = acc.find(
-      (item) => item.station_location === petrolItem.station_location
-    );
-
-    if (existingLocation) {
-      if (
-        new Date(petrolItem.last_updated) >
-        new Date(existingLocation.last_updated)
-      ) {
-        existingLocation.petrolPrice = petrolItem.price;
-      }
-      return acc;
-    }
-
-    const allStationsAtLocation = [
-      ...petrolData.filter(
-        (p) => p.station_location === petrolItem.station_location
-      ),
-      ...dieselData.filter(
-        (d) => d.station_location === petrolItem.station_location
-      ),
-      ...keroseneData.filter(
-        (k) => k.station_location === petrolItem.station_location
-      ),
-    ];
-
-    const uniqueStations = [
-      ...new Set(allStationsAtLocation.map((s) => s.station_name)),
-    ];
-
-    const dieselItem = dieselData.find(
-      (d) =>
-        d.station_name === petrolItem.station_name &&
-        d.station_location === petrolItem.station_location
-    );
-
-    const keroseneItem = keroseneData.find(
-      (k) =>
-        k.station_name === petrolItem.station_name &&
-        k.station_location === petrolItem.station_location
-    );
-
-    acc.push({
-      ...petrolItem,
-      petrolPrice: petrolItem.price,
-      dieselPrice: dieselItem?.price ?? null,
-      kerosenePrice: keroseneItem?.price ?? null,
-      stationCount: uniqueStations.length,
-    });
-
-    return acc;
-  }, [] as any[]);
-
-  const filteredMergedData = mergedData.filter(
-    (item) =>
-      item.station_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.station_location.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const slugify = (text: string) => {
-    return text
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-");
-  };
-
   const LoadingIndicator = () => (
   <div className="mt-10 flex flex-col items-center justify-center py-12">
     <Clock className="h-12 w-12 text-gray-400 mb-4 animate-spin" />
@@ -273,7 +200,7 @@ const NoData = () => (
   return (
     <div>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex gap-5 justify-between items-center">
+        <div className="flex max-md:flex-col gap-5 justify-between items-center">
           <div className="w-full max-w-4xl">
             <input
               type="text"
@@ -283,10 +210,12 @@ const NoData = () => (
               className="w-full rounded-lg shadow-lg max-w-lg p-2 border"
             />
           </div>
+          <div className="flex gap-5 max-md:w-full max-md:justify-between items-center pt-5">
+            <Link to="/fillingStations" className="underline font-bold text-gray-900">Filling Stations</Link>
           {user ? (
             <button
               onClick={() => setShowAddForm(true)}
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+              className="px-2 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
             >
               Add New Entry
             </button>
@@ -294,15 +223,19 @@ const NoData = () => (
             <a
               href={
                 // "https://docs.google.com/forms/d/1OjkTzr02Zf41669SYs0VSuxoY75yYX-Tp8Z0I6SoRGg/preview"
-                "https://docs.google.com/forms/d/e/1FAIpQLSf3JihNfjg8JKaMP3zaKIgLQ9tIvTX8PCZ3gQjM7vyQWtW9Fg/viewform?usp=dialog"
+                // "https://docs.google.com/forms/d/e/1FAIpQLSf3JihNfjg8JKaMP3zaKIgLQ9tIvTX8PCZ3gQjM7vyQWtW9Fg/viewform?usp=dialog"
+                    // https://docs.google.com/forms/d/e/1FAIpQLSf3JihNfjg8JKaMP3zaKIgLQ9tIvTX8PCZ3gQjM7vyQWtW9Fg/viewform?usp=preview
+                    "https://docs.google.com/forms/d/e/1FAIpQLSf3JihNfjg8JKaMP3zaKIgLQ9tIvTX8PCZ3gQjM7vyQWtW9Fg/viewform?usp=sharing&ouid=109152229980208496587"
+              // https://docs.google.com/forms/d/e/1FAIpQLSf3JihNfjg8JKaMP3zaKIgLQ9tIvTX8PCZ3gQjM7vyQWtW9Fg/viewform?usp=sharing&ouid=109152229980208496587
               }
               target="_blank"
               rel="noopener noreferrer"
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+              className="px-2 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
             >
               Submit Fuel Prices
             </a>
           )}
+          </div>
         </div>
         {loading ? (
         <LoadingIndicator />
@@ -346,7 +279,7 @@ const NoData = () => (
                 <AddPriceEntry
                   closeModal={() => setShowAddForm(false)}
                   onSuccess={handleNewEntry}
-                  isAdmin={user}
+                  isAdmin={!!user}
                   userEmail={user?.email}
                 />
               </div>
@@ -384,58 +317,6 @@ const NoData = () => (
           </div>
         </div>
       </main>
-      <div
-        className={`${
-          mergedData.length ? "mt-20 bg-zinc-200 w-full h-[2px]" : "hidden"
-        }`}
-      />
-
-      {!loading && (
-        <div className="mt-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {filteredMergedData.map((item, index) => (
-            <Link
-              to={`/stations/${slugify(item.station_location)}`}
-              key={index}
-            >
-              <div className="cursor-pointer h-[100%] max-h-[400px] flex flex-col justify-between bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition-shadow border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900">
-                      {item?.station_location}
-                    </h2>
-                    <p className="text-zinc-500">
-                      {item.stationCount}{" "}
-                      {item.stationCount === 1 ? "station" : "stations"}
-                    </p>
-                  </div>
-                  <Fuel className="h-6 w-6 text-blue-500" />
-                </div>
-
-                <div className="mt-4 space-y-3">
-                  <div className="flex justify-between items-center bg-gray-200 rounded-lg px-4 py-2">
-                    <span className="text-gray-600 font-medium">Petrol</span>
-                    <span className="text-lg font-bold text-green-600">
-                      {item?.petrolPrice ? `₦${item.petrolPrice}/L` : "NA"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center bg-gray-200 rounded-lg px-4 py-2">
-                    <span className="text-gray-600 font-medium">Diesel</span>
-                    <span className="text-lg font-bold text-green-600">
-                      {item.dieselPrice ? `₦${item.dieselPrice}/L` : "N/A"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center bg-gray-200 rounded-lg px-4 py-2">
-                    <span className="text-gray-600 font-medium">Kerosene</span>
-                    <span className="text-lg font-bold text-green-600">
-                      {item.kerosenePrice ? `₦${item.kerosenePrice}/L` : "N/A"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

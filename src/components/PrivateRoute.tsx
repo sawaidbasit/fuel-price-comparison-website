@@ -1,9 +1,13 @@
-import { useEffect, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { supabase } from "../../lib/supabaseClient";
 import { User } from "@supabase/supabase-js";
 
-export default function PrivateRoute({ children }) {
+interface PrivateRouteProps {
+  children: ReactNode;
+}
+
+export default function PrivateRoute({ children }: PrivateRouteProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -31,7 +35,7 @@ export default function PrivateRoute({ children }) {
   }, []);
 
   if (loading) {
-    return <div>Loading...</div>; // or a spinner
+    return <div>Loading...</div>;
   }
 
   return user ? children : <Navigate to="/" />;

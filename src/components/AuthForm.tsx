@@ -56,7 +56,6 @@ export default function AuthForm() {
         Sign Up
       </button>
 
-      {loading && <p>Loading...</p>}
       {message && <p className="mt-4 text-red-500">{message}</p>}
     </div>
   );

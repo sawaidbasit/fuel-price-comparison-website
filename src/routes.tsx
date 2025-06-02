@@ -8,6 +8,7 @@ import AdminPanel from "./pages/AdminPanel";
 import UserSubmissionForm from "./components/UserSubmissionForm";
 import PrivateRoute from "./components/PrivateRoute";
 import Layout from "./components/layout";
+import FillingStations from "./pages/fillingStations";
 
 // Public routes function
 const getPublicRoutes = () => (
@@ -16,6 +17,7 @@ const getPublicRoutes = () => (
     <Route path="/login" element={<Login />} />
     <Route path="/logout" element={<LogoutButton />} />
     <Route path="/stations/:stateName" element={<StationList />} />
+    <Route path="/fillingStations" element={<FillingStations />} />
     <Route path="/submit" element={<UserSubmissionForm />} />
   </>
 );
