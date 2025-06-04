@@ -222,11 +222,7 @@ const NoData = () => (
           ) : (
             <a
               href={
-                // "https://docs.google.com/forms/d/1OjkTzr02Zf41669SYs0VSuxoY75yYX-Tp8Z0I6SoRGg/preview"
-                // "https://docs.google.com/forms/d/e/1FAIpQLSf3JihNfjg8JKaMP3zaKIgLQ9tIvTX8PCZ3gQjM7vyQWtW9Fg/viewform?usp=dialog"
-                    // https://docs.google.com/forms/d/e/1FAIpQLSf3JihNfjg8JKaMP3zaKIgLQ9tIvTX8PCZ3gQjM7vyQWtW9Fg/viewform?usp=preview
-                    "https://docs.google.com/forms/d/e/1FAIpQLSf3JihNfjg8JKaMP3zaKIgLQ9tIvTX8PCZ3gQjM7vyQWtW9Fg/viewform?usp=sharing&ouid=109152229980208496587"
-              // https://docs.google.com/forms/d/e/1FAIpQLSf3JihNfjg8JKaMP3zaKIgLQ9tIvTX8PCZ3gQjM7vyQWtW9Fg/viewform?usp=sharing&ouid=109152229980208496587
+              "https://forms.zohopublic.com/contactekof1/form/SubmitFuelPricesDescription/formperma/5tjCI0hpbCJ3X0erXLMZuIX45kVYKxmmfA7_PPoG4bU"
               }
               target="_blank"
               rel="noopener noreferrer"
